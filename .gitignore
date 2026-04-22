@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pkl
+.env
+venv/
+.venv/
+
+# Model cache (large, regenerate with run.py)
+cache/box_*.json
+cache/schedule_*.json
+cache/pitchers_*.json
+
+# Keep pitcher_assignments.parquet and all_seasons.parquet out too
+cache/*.parquet
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Logs & temp
+*.log
+/tmp/
+
+# macOS
+.DS_Store
+.claude/
