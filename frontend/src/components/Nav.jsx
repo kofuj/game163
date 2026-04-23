@@ -6,6 +6,7 @@ const links = [
   { label: 'Predictions', to: '/predictions' },
   { label: 'History',     to: '/history'     },
   { label: 'Performance', to: '/performance' },
+  { label: 'Blog',        to: '/blog'        },
 ];
 
 export default function Nav() {
