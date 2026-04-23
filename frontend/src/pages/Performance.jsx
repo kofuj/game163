@@ -223,8 +223,8 @@ export default function Performance() {
                 }
               </tbody>
             </table>
-            <Link to="/predictions" style={{ display: 'block', marginTop: 16, fontSize: 12, fontFamily: t.mono, color: t.fg, borderBottom: `1px solid ${t.border}`, width: 'fit-content' }}>
-              View all predictions →
+            <Link to="/history" style={{ display: 'block', marginTop: 16, fontSize: 12, fontFamily: t.mono, color: t.fg, borderBottom: `1px solid ${t.border}`, width: 'fit-content' }}>
+              Full prediction history →
             </Link>
           </div>
         </div>

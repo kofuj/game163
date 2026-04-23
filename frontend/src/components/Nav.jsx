@@ -4,6 +4,7 @@ import { t } from '../theme.js';
 const links = [
   { label: 'Home',        to: '/'            },
   { label: 'Predictions', to: '/predictions' },
+  { label: 'History',     to: '/history'     },
   { label: 'Performance', to: '/performance' },
 ];
 
