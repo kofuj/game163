@@ -115,11 +115,9 @@ export default function Performance() {
   const o = perf?.overall;
   const seasons = perf?.by_season ?? [];
   const rawPicks = record?.predictions ?? [];
-  const recentPicks = rawPicks.length >= 4
-    ? rawPicks
-    : [...rawPicks, ...PLACEHOLDER_PICKS.slice(rawPicks.length)];
+  const recentPicks = rawPicks.filter(p => p.outcome === 'HIT' || p.outcome === 'MISS');
   const hits = recentPicks.filter(p => p.outcome === 'HIT').length;
-  const settled = recentPicks.filter(p => p.outcome !== 'PENDING').length;
+  const settled = recentPicks.length;
 
   return (
     <div style={{ minHeight: '100vh', background: t.bg, color: t.fg, fontFamily: t.sans }}>
@@ -190,7 +188,7 @@ export default function Performance() {
                 <div style={{ fontFamily: t.serif, fontWeight: 700, fontSize: 22, letterSpacing: '-.02em' }}>Recent Predictions</div>
               </div>
               <div style={{ fontFamily: t.mono, fontSize: 12, color: t.muted, textAlign: 'right' }}>
-                {settled > 0 ? `${hits} of ${settled} correct` : 'Settling results…'}<br />
+                {settled > 0 ? `${hits}/${settled} correct` : 'No settled results yet'}<br />
                 <span style={{ color: t.faint, fontSize: 11 }}>recent game days</span>
               </div>
             </div>
@@ -205,15 +203,23 @@ export default function Performance() {
               <tbody>
                 {loading
                   ? Array.from({ length: 6 }).map((_, i) => <TableRowSkeleton key={i} cols={5} />)
-                  : recentPicks.map((p, i) => (
-                    <tr key={i} className="row-hover" style={{ borderBottom: `1px solid ${t.border}`, transition: 'background .12s' }}>
-                      <td style={{ padding: '11px 0', fontWeight: 600, color: t.fg }}>{p.matchup}</td>
-                      <td style={{ color: t.muted }}>{p.result || '—'}</td>
-                      <td style={{ color: t.fg }}>{p.pick} <span style={{ color: t.faint }}>{p.pick_prob}%</span></td>
-                      <td><GradeChip grade={p.grade} /></td>
-                      <td style={{ textAlign: 'right' }}><Badge outcome={p.outcome} /></td>
-                    </tr>
-                  ))
+                  : recentPicks.length === 0
+                    ? (
+                      <tr>
+                        <td colSpan={5} style={{ padding: '24px 0', color: t.faint, fontFamily: t.mono, fontSize: 12 }}>
+                          No settled results yet — check back after tonight's games.
+                        </td>
+                      </tr>
+                    )
+                    : recentPicks.map((p, i) => (
+                      <tr key={i} className="row-hover" style={{ borderBottom: `1px solid ${t.border}`, transition: 'background .12s' }}>
+                        <td style={{ padding: '11px 0', fontWeight: 600, color: t.fg }}>{p.matchup}</td>
+                        <td style={{ color: t.muted }}>{p.result || '—'}</td>
+                        <td style={{ color: t.fg }}>{p.pick} <span style={{ color: t.faint }}>{p.pick_prob}%</span></td>
+                        <td><GradeChip grade={p.grade} /></td>
+                        <td style={{ textAlign: 'right' }}><Badge outcome={p.outcome} /></td>
+                      </tr>
+                    ))
                 }
               </tbody>
             </table>
