@@ -23,3 +23,18 @@ date,gamePk,away_name,home_name,pick,pick_prob,grade,home_win_prob,elo_diff,outc
 2026-04-23,824368,San Diego Padres,Colorado Rockies,San Diego Padres,0.5699,C,0.4301,32.86,PENDING,
 2026-04-23,825096,Chicago White Sox,Arizona Diamondbacks,Arizona Diamondbacks,0.5159,C,0.5159,92.13,PENDING,
 2026-04-23,822912,Pittsburgh Pirates,Texas Rangers,Pittsburgh Pirates,0.5181,C,0.4819,29.02,PENDING,
+2026-04-22,823641,Minnesota Twins,New York Mets,New York Mets,0.6122,B,0.6122,52.32,HIT,2-3
+2026-04-22,824774,New York Yankees,Boston Red Sox,New York Yankees,0.5506,C,0.4494,6.46,HIT,4-1
+2026-04-22,824367,San Diego Padres,Colorado Rockies,San Diego Padres,0.5699,C,0.4301,32.86,MISS,3-8
+2026-04-22,822913,Pittsburgh Pirates,Texas Rangers,Pittsburgh Pirates,0.5181,C,0.4819,29.01,HIT,8-4
+2026-04-22,824688,Philadelphia Phillies,Chicago Cubs,Chicago Cubs,0.5091,C,0.5091,55.07,HIT,2-7
+2026-04-22,822748,Atlanta Braves,Washington Nationals,Atlanta Braves,0.595,B,0.405,-4.29,HIT,8-6
+2026-04-22,825097,Chicago White Sox,Arizona Diamondbacks,Arizona Diamondbacks,0.5159,C,0.5159,92.14,HIT,7-11
+2026-04-22,823147,Athletics,Seattle Mariners,Seattle Mariners,0.6257,B,0.6257,61.67,HIT,4-5
+2026-04-22,824123,Baltimore Orioles,Kansas City Royals,Baltimore Orioles,0.5119,C,0.4881,31.05,HIT,8-6
+2026-04-22,822993,Cincinnati Reds,Tampa Bay Rays,Cincinnati Reds,0.5092,C,0.4908,26.22,MISS,1-6
+2026-04-22,824449,Houston Astros,Cleveland Guardians,Houston Astros,0.5243,C,0.4757,46.73,HIT,2-0
+2026-04-22,823878,St. Louis Cardinals,Miami Marlins,St. Louis Cardinals,0.5627,C,0.4373,-4.0,MISS,1-4
+2026-04-22,824044,Toronto Blue Jays,Los Angeles Angels,Toronto Blue Jays,0.5627,C,0.4373,0.29,MISS,3-7
+2026-04-22,824286,Milwaukee Brewers,Detroit Tigers,Milwaukee Brewers,0.5303,C,0.4697,26.09,MISS,2-5
+2026-04-22,823231,Los Angeles Dodgers,San Francisco Giants,Los Angeles Dodgers,0.5849,B,0.4151,11.65,MISS,0-3
