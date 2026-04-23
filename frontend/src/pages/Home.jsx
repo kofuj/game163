@@ -252,12 +252,12 @@ export default function Home() {
               Season-by-season accuracy, grade breakdowns, and every prediction ever made.
             </p>
           </div>
-          <Link to="/performance">
+          <Link to="/history">
             <button style={{
               background: t.fg, color: t.bg, border: `1px solid ${t.fg}`,
               borderRadius: 4, padding: '13px 26px', fontSize: 14, fontFamily: t.sans,
               cursor: 'pointer', fontWeight: 500, whiteSpace: 'nowrap',
-            }}>Performance Dashboard →</button>
+            }}>Full Prediction History →</button>
           </Link>
         </div>
 
