@@ -63,14 +63,14 @@ export default function Predictions() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2d6a3f', animation: 'pulse 2s infinite' }} />
             <span style={{ fontFamily: t.mono, fontSize: 11, color: t.muted, letterSpacing: '.12em', textTransform: 'uppercase' }}>
-              {loading ? 'Loading\u2026' : dateLabel}
+              {loading ? 'Loading…' : dateLabel}
             </span>
           </div>
           <h1 style={{ fontFamily: t.serif, fontWeight: 800, fontSize: 'clamp(32px,5vw,56px)', lineHeight: 1.05, letterSpacing: '-.03em', marginBottom: 12 }}>
-            Today\u2019s Predictions
+            Today’s Predictions
           </h1>
           <p style={{ fontSize: 15, color: t.muted, lineHeight: 1.65, maxWidth: 520 }}>
-            Walk-forward model output for every game on today\u2019s schedule. Grade A = highest confidence.
+            Walk-forward model output for every game on today’s schedule. Grade A = highest confidence.
           </p>
         </div>
 
@@ -101,7 +101,7 @@ export default function Predictions() {
           </div>
           {!loading && data && (
             <div style={{ fontFamily: t.mono, fontSize: 12, color: t.muted }}>
-              {data.games} game{data.games !== 1 ? 's' : ''} \u00b7 {data.date}
+              {data.games} game{data.games !== 1 ? 's' : ''} · {data.date}
             </div>
           )}
         </div>
@@ -187,9 +187,9 @@ export default function Predictions() {
         {!loading && (
           <div style={{ marginTop: 20, display: 'flex', gap: 24, fontFamily: t.mono, fontSize: 12, color: t.muted, flexWrap: 'wrap' }}>
             {[
-              { g: 'A', label: '\u226565% confidence \u2014 model\u2019s highest edge' },
-              { g: 'B', label: '58\u201365% confidence \u2014 solid edge' },
-              { g: 'C', label: '50\u201358% confidence \u2014 marginal edge' },
+              { g: 'A', label: '≥65% confidence — model’s highest edge' },
+              { g: 'B', label: '58–65% confidence — solid edge' },
+              { g: 'C', label: '50–58% confidence — marginal edge' },
             ].map(({ g, label }) => (
               <div key={g} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{
@@ -207,7 +207,7 @@ export default function Predictions() {
         <div style={{ marginTop: 80, paddingTop: 24, borderTop: `1px solid ${t.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <span style={{ fontFamily: t.serif, fontWeight: 700, fontSize: 15 }}>Game 163</span>
           <div style={{ fontSize: 12, fontFamily: t.mono, color: t.faint }}>
-            Not affiliated with MLB. Analytics only, not betting advice. \u00a9 2026 Game 163
+            Not affiliated with MLB. Analytics only, not betting advice. © 2026 Game 163
           </div>
         </div>
       </div>

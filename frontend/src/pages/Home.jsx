@@ -126,7 +126,7 @@ export default function Home() {
                 background: t.fg, color: t.bg, border: `1px solid ${t.fg}`,
                 borderRadius: 4, padding: '11px 22px', fontSize: 14, fontFamily: t.sans,
                 cursor: 'pointer', fontWeight: 500,
-              }}>Today\u2019s Picks \u2192</button>
+              }}>Today’s Picks →</button>
             </Link>
             <Link to="/performance">
               <button style={{
@@ -148,9 +148,9 @@ export default function Home() {
           ) : (
             <>
               <MiniStat label="Overall accuracy"   value={`${o.accuracy}%`}    sub={`+${o.vs_baseline} vs home baseline`} />
-              <MiniStat label="Grade A accuracy"   value={`${o.acc_grade_A ?? '\u2014'}%`} sub="Highest-confidence tier" />
-              <MiniStat label="Games validated"    value={o.total_games?.toLocaleString() ?? '\u2014'} sub="Walk-forward holdout" />
-              <MiniStat label="Seasons backtested" value={perf?.by_season?.length ?? '\u2014'} sub="2021\u20132024" />
+              <MiniStat label="Grade A accuracy"   value={`${o.acc_grade_A ?? '—'}%`} sub="Highest-confidence tier" />
+              <MiniStat label="Games validated"    value={o.total_games?.toLocaleString() ?? '—'} sub="Walk-forward holdout" />
+              <MiniStat label="Seasons backtested" value={perf?.by_season?.length ?? '—'} sub="2021–2024" />
             </>
           )}
         </div>
@@ -160,10 +160,10 @@ export default function Home() {
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
             <div>
               <div style={{ fontFamily: t.mono, fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: t.muted, marginBottom: 6 }}>
-                {preds ? preds.date : '\u2014'}
+                {preds ? preds.date : '—'}
               </div>
               <h2 style={{ fontFamily: t.serif, fontWeight: 700, fontSize: 28, letterSpacing: '-.02em' }}>
-                Today\u2019s Predictions
+                Today’s Predictions
                 {preds && (
                   <span style={{ fontFamily: t.mono, fontWeight: 400, fontSize: 14, color: t.muted, marginLeft: 12 }}>
                     {preds.games} games
@@ -212,7 +212,7 @@ export default function Home() {
           {preds && (
             <div style={{ marginTop: 20, textAlign: 'right' }}>
               <Link to="/predictions" style={{ fontFamily: t.mono, fontSize: 13, color: t.fg, borderBottom: `1px solid ${t.border}` }}>
-                Full predictions table \u2192
+                Full predictions table →
               </Link>
             </div>
           )}
@@ -257,7 +257,7 @@ export default function Home() {
               background: t.fg, color: t.bg, border: `1px solid ${t.fg}`,
               borderRadius: 4, padding: '13px 26px', fontSize: 14, fontFamily: t.sans,
               cursor: 'pointer', fontWeight: 500, whiteSpace: 'nowrap',
-            }}>Performance Dashboard \u2192</button>
+            }}>Performance Dashboard →</button>
           </Link>
         </div>
 
@@ -265,7 +265,7 @@ export default function Home() {
         <div style={{ marginTop: 80, paddingTop: 24, borderTop: `1px solid ${t.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <span style={{ fontFamily: t.serif, fontWeight: 700, fontSize: 15, color: t.fg }}>Game 163</span>
           <div style={{ fontSize: 12, fontFamily: t.mono, color: t.faint }}>
-            Not affiliated with MLB. Analytics only, not betting advice. \u00a9 2026 Game 163
+            Not affiliated with MLB. Analytics only, not betting advice. © 2026 Game 163
           </div>
         </div>
       </div>

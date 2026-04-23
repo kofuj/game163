@@ -37,7 +37,7 @@ function GradeBar({ grade, pct }) {
       <div style={{ flex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
           <span style={{ fontSize: 11, color: t.muted, fontFamily: t.mono }}>
-            {grade === 'A' ? '\u226565% conf' : grade === 'B' ? '58\u201365% conf' : '50\u201358% conf'}
+            {grade === 'A' ? '≥65% conf' : grade === 'B' ? '58–65% conf' : '50–58% conf'}
           </span>
           <span style={{ fontSize: 13, fontWeight: 600, color: t.fg, fontFamily: t.mono }}>{pct}%</span>
         </div>
@@ -131,7 +131,7 @@ export default function Performance() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2d6a3f', animation: 'pulse 2s infinite' }} />
             <span style={{ fontFamily: t.mono, fontSize: 11, color: t.muted, letterSpacing: '.12em', textTransform: 'uppercase' }}>
-              Live \u00b7 Updated daily
+              Live · Updated daily
             </span>
           </div>
           <h1 style={{ fontFamily: t.serif, fontSize: 'clamp(36px,6vw,64px)', fontWeight: 800, lineHeight: 1.05, letterSpacing: '-.03em', marginBottom: 16 }}>
@@ -139,7 +139,7 @@ export default function Performance() {
           </h1>
           <p style={{ fontSize: 16, color: t.muted, maxWidth: 520, lineHeight: 1.65 }}>
             The complete record for every Game 163 projection. Win probabilities tested against real outcomes.
-            Walk-forward validation only \u2014 no cherry-picking.
+            Walk-forward validation only — no cherry-picking.
           </p>
         </div>
 
@@ -153,8 +153,8 @@ export default function Performance() {
           ) : o ? (
             <>
               <StatCard label="Accuracy"   value={`${o.accuracy}%`}   sub={`+${o.vs_baseline} vs home baseline`} />
-              <StatCard label="Test Games" value={o.total_games?.toLocaleString() ?? '\u2014'} sub="Walk-forward holdout" />
-              <StatCard label="A Picks"    value={`${o.acc_grade_A ?? '\u2014'}%`}  sub="Highest confidence tier" />
+              <StatCard label="Test Games" value={o.total_games?.toLocaleString() ?? '—'} sub="Walk-forward holdout" />
+              <StatCard label="A Picks"    value={`${o.acc_grade_A ?? '—'}%`}  sub="Highest confidence tier" />
               <StatCard label="Log Loss"   value={o.log_loss}          sub="Lower is better" />
             </>
           ) : (
@@ -190,7 +190,7 @@ export default function Performance() {
                 <div style={{ fontFamily: t.serif, fontWeight: 700, fontSize: 22, letterSpacing: '-.02em' }}>Recent Predictions</div>
               </div>
               <div style={{ fontFamily: t.mono, fontSize: 12, color: t.muted, textAlign: 'right' }}>
-                {settled > 0 ? `${hits} of ${settled} correct` : 'Settling results\u2026'}<br />
+                {settled > 0 ? `${hits} of ${settled} correct` : 'Settling results…'}<br />
                 <span style={{ color: t.faint, fontSize: 11 }}>recent game days</span>
               </div>
             </div>
@@ -208,7 +208,7 @@ export default function Performance() {
                   : recentPicks.map((p, i) => (
                     <tr key={i} className="row-hover" style={{ borderBottom: `1px solid ${t.border}`, transition: 'background .12s' }}>
                       <td style={{ padding: '11px 0', fontWeight: 600, color: t.fg }}>{p.matchup}</td>
-                      <td style={{ color: t.muted }}>{p.result || '\u2014'}</td>
+                      <td style={{ color: t.muted }}>{p.result || '—'}</td>
                       <td style={{ color: t.fg }}>{p.pick} <span style={{ color: t.faint }}>{p.pick_prob}%</span></td>
                       <td><GradeChip grade={p.grade} /></td>
                       <td style={{ textAlign: 'right' }}><Badge outcome={p.outcome} /></td>
@@ -218,7 +218,7 @@ export default function Performance() {
               </tbody>
             </table>
             <Link to="/predictions" style={{ display: 'block', marginTop: 16, fontSize: 12, fontFamily: t.mono, color: t.fg, borderBottom: `1px solid ${t.border}`, width: 'fit-content' }}>
-              View all predictions \u2192
+              View all predictions →
             </Link>
           </div>
         </div>
@@ -280,7 +280,7 @@ export default function Performance() {
             {METRICS.map((m, i) => {
               const vals = o
                 ? [`${o.accuracy}%`, `${o.log_loss}`, '10.8 avg', `${o.brier_score}`, '54.2%', `${o.total_games?.toLocaleString()} games`]
-                : ['\u2014', '\u2014', '\u2014', '\u2014', '54.2%', '\u2014'];
+                : ['—', '—', '—', '—', '54.2%', '—'];
               const col = i % 2;
               const row = Math.floor(i / 2);
               return (
@@ -333,7 +333,7 @@ export default function Performance() {
         <div style={{ paddingTop: 24, borderTop: `1px solid ${t.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <span style={{ fontFamily: t.serif, fontWeight: 700, fontSize: 15 }}>Game 163</span>
           <div style={{ fontSize: 12, fontFamily: t.mono, color: t.faint }}>
-            Not affiliated with MLB. Analytics only, not betting advice. \u00a9 2026 Game 163
+            Not affiliated with MLB. Analytics only, not betting advice. © 2026 Game 163
           </div>
         </div>
       </div>
