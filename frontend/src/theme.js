@@ -1,14 +1,15 @@
 export const t = {
-  green:  '#1a5c2a',
-  dark:   '#0d1f13',
-  cream:  '#f5f0e8',
-  red:    '#c41230',
-  gold:   '#d4a843',
-  muted:  'rgba(245,240,232,0.45)',
-  border: 'rgba(255,255,255,0.07)',
-  card:   'rgba(255,255,255,0.03)',
+  bg:     '#ffffff',
+  fg:     '#111111',
+  muted:  '#888888',
+  faint:  '#bbbbbb',
+  border: '#e8e8e8',
+  surface:'#f7f7f6',
+  green:  '#2d6a3f',
+  gold:   '#a07820',
   mono:   "'DM Mono', monospace",
   serif:  "'Playfair Display', serif",
+  sans:   "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
 };
 
-export const gradeColor = { A: '#d4a843', B: '#7fb069', C: '#4a8f5f' };
+export const gradeColor = { A: '#a07820', B: '#2d6a3f', C: '#555555' };
