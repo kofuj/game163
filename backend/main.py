@@ -41,6 +41,8 @@ def _load_record() -> pd.DataFrame:
         df["outcome"] = "PENDING"
     if "result" not in df.columns:
         df["result"] = ""
+    df["outcome"] = df["outcome"].fillna("PENDING")
+    df["result"]  = df["result"].fillna("")
     return df
 
 
