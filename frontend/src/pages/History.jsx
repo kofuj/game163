@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Nav from '../components/Nav.jsx';
 import { fetchRecord } from '../api.js';
 import { t, gradeColor } from '../theme.js';
+import TeamLogo from '../components/TeamLogo.jsx';
 
 function GradeChip({ grade }) {
   const c = gradeColor[grade] || t.muted;
@@ -171,15 +172,29 @@ export default function History() {
                         {p.date}
                       </td>
                       <td style={{ padding: '14px 16px', fontFamily: t.mono, fontSize: 13, color: t.fg, fontWeight: 500 }}>
-                        {p.matchup}
+                        {(() => {
+                          const [away, home] = (p.matchup || '').split(' @ ');
+                          return (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                              <TeamLogo name={away} size={16} />
+                              <span style={{ color: t.muted }}>{away}</span>
+                              <span style={{ color: t.faint, fontSize: 11 }}>@</span>
+                              <TeamLogo name={home} size={16} />
+                              <span>{home}</span>
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td style={{ padding: '14px 16px', fontFamily: t.mono, fontSize: 13, color: t.muted }}>
                         {p.result || '—'}
                       </td>
                       <td style={{ padding: '14px 16px' }}>
-                        <span style={{ fontFamily: t.mono, fontWeight: 600, fontSize: 13, color: c }}>
-                          {p.pick}
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <TeamLogo name={p.pick} size={18} />
+                          <span style={{ fontFamily: t.mono, fontWeight: 600, fontSize: 13, color: c }}>
+                            {p.pick}
+                          </span>
+                        </div>
                         <span style={{ fontFamily: t.mono, fontSize: 11, color: t.faint, marginLeft: 6 }}>
                           {p.pick_prob}%
                         </span>

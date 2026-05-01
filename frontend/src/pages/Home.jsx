@@ -4,6 +4,7 @@ import Nav from '../components/Nav.jsx';
 import { PredictionCardSkeleton, StatCardSkeleton } from '../components/Skeleton.jsx';
 import { fetchPredictions, fetchPerformance } from '../api.js';
 import { t, gradeColor } from '../theme.js';
+import TeamLogo from '../components/TeamLogo.jsx';
 
 function GradeChip({ grade }) {
   const c = gradeColor[grade] || t.muted;
@@ -25,11 +26,16 @@ function PickCard({ p }) {
       padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 10,
       background: t.bg,
     }}>
-      <div style={{ fontSize: 12, fontFamily: t.mono, color: t.muted }}>
-        {p.away_name} <span style={{ color: t.faint }}>@</span> {p.home_name}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontFamily: t.mono, color: t.muted }}>
+        <TeamLogo name={p.away_name} size={16} />
+        {p.away_name}
+        <span style={{ color: t.faint }}>@</span>
+        <TeamLogo name={p.home_name} size={16} />
+        {p.home_name}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ fontFamily: t.serif, fontWeight: 700, fontSize: 18, color: t.fg }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: t.serif, fontWeight: 700, fontSize: 18, color: t.fg }}>
+          <TeamLogo name={p.pick} size={22} />
           {p.pick}
         </div>
         <GradeChip grade={p.grade} />

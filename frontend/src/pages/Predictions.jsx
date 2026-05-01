@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Nav from '../components/Nav.jsx';
 import { fetchPredictions } from '../api.js';
 import { t, gradeColor } from '../theme.js';
+import TeamLogo from '../components/TeamLogo.jsx';
 
 function GradeChip({ grade }) {
   const c = gradeColor[grade] || t.muted;
@@ -144,10 +145,17 @@ export default function Predictions() {
                     return (
                       <tr key={p.gamePk} className="row-hover" style={{ borderBottom: `1px solid ${t.border}`, transition: 'background .12s' }}>
                         <td style={{ padding: '15px 16px', fontFamily: t.mono, fontSize: 13 }}>
-                          <div style={{ color: t.faint, fontSize: 11, marginBottom: 3 }}>
-                            {p.away_name} @ {p.home_name}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: t.faint, fontSize: 11, marginBottom: 5 }}>
+                            <TeamLogo name={p.away_name} size={14} />
+                            {p.away_name}
+                            <span>@</span>
+                            <TeamLogo name={p.home_name} size={14} />
+                            {p.home_name}
                           </div>
-                          <div style={{ fontWeight: 600, color: t.fg }}>{p.pick}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontWeight: 600, color: t.fg }}>
+                            <TeamLogo name={p.pick} size={20} />
+                            {p.pick}
+                          </div>
                         </td>
                         <td style={{ padding: '15px 16px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
