@@ -193,21 +193,26 @@ export default function Predictions() {
 
         {/* Grade legend */}
         {!loading && (
-          <div style={{ marginTop: 20, display: 'flex', gap: 24, fontFamily: t.mono, fontSize: 12, color: t.muted, flexWrap: 'wrap' }}>
-            {[
-              { g: 'A', label: '≥65% confidence — model’s highest edge' },
-              { g: 'B', label: '58–65% confidence — solid edge' },
-              { g: 'C', label: '50–58% confidence — marginal edge' },
-            ].map(({ g, label }) => (
-              <div key={g} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{
-                  width: 18, height: 18, borderRadius: 3, fontSize: 10, fontWeight: 700,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: gradeColor[g] + '15', color: gradeColor[g], border: `1px solid ${gradeColor[g]}30`,
-                }}>{g}</span>
-                {label}
-              </div>
-            ))}
+          <div style={{ marginTop: 20, display: ‘flex’, flexDirection: ‘column’, gap: 10, fontFamily: t.mono, fontSize: 12, color: t.muted }}>
+            <div style={{ display: ‘flex’, gap: 24, flexWrap: ‘wrap’ }}>
+              {[
+                { g: ‘A’, label: ‘≥65% — strong Bayesian edge’ },
+                { g: ‘B’, label: ‘58–65% — real edge’ },
+                { g: ‘C’, label: ‘50–58% — marginal edge’ },
+              ].map(({ g, label }) => (
+                <div key={g} style={{ display: ‘flex’, alignItems: ‘center’, gap: 6 }}>
+                  <span style={{
+                    width: 18, height: 18, borderRadius: 3, fontSize: 10, fontWeight: 700,
+                    display: ‘flex’, alignItems: ‘center’, justifyContent: ‘center’,
+                    background: gradeColor[g] + ‘15’, color: gradeColor[g], border: `1px solid ${gradeColor[g]}30`,
+                  }}>{g}</span>
+                  {label}
+                </div>
+              ))}
+            </div>
+            <div style={{ color: t.faint, fontSize: 11 }}>
+              Win probabilities from a Bayesian logistic regression with Beta-Binomial team ratings and Gaussian priors on all coefficients.
+            </div>
           </div>
         )}
 

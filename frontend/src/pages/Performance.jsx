@@ -83,19 +83,22 @@ function Badge({ outcome }) {
 }
 
 const METRICS = [
-  { label: 'Accuracy',        desc: 'Percentage of games where the predicted winner won. MLB home baseline is ~54.2%.' },
-  { label: 'Log Loss',        desc: 'Calibration score — when we say 70%, it should happen ~70% of the time. Lower is better.' },
-  { label: 'Edge (pts)',      desc: 'Distance from 50/50 for each prediction. A 65% pick has 15 pts of edge.' },
-  { label: 'Brier Score',     desc: 'Mean squared error of predicted probability vs actual outcome. 0 = perfect.' },
-  { label: 'Baseline',        desc: 'Accuracy from always picking the home team. Every useful model must beat this.' },
-  { label: 'Holdout Testing', desc: 'Model tested on games it never saw during training. Walk-forward validation by season prevents overfitting.' },
+  { label: 'Accuracy',           desc: 'Percentage of games where the predicted winner won. MLB home baseline is ~54.2%.' },
+  { label: 'Log Loss',           desc: 'Calibration score — when we say 70%, it should happen ~70% of the time. Lower is better. The Bayesian classifier optimizes this directly.' },
+  { label: 'Edge (pts)',         desc: 'Distance from 50/50 for each prediction. A 65% pick has 15 pts of edge.' },
+  { label: 'Brier Score',        desc: 'Mean squared error of predicted probability vs actual outcome. 0 = perfect.' },
+  { label: 'Baseline',           desc: 'Accuracy from always picking the home team. Every useful model must beat this.' },
+  { label: 'Posterior Std',      desc: 'Width of the Bayesian team-strength distribution. High std = less data, more uncertainty. Grades reflect this — Grade C picks often involve high-uncertainty teams.' },
+  { label: 'Holdout Testing',    desc: 'Model tested on games it never saw during training. Walk-forward validation by season prevents overfitting.' },
 ];
 
 const FAQS = [
-  { q: 'How accurate is the model?', a: 'Accuracy averages ~55% across 9,936 walk-forward validated games. Grade A picks hit at ~65%.' },
+  { q: 'How accurate is the model?', a: 'Accuracy averages ~55% across walk-forward validated games. Grade A picks hit at ~65%. The Bayesian upgrade improves calibration — when the model says 65%, it should be right about 65% of the time.' },
+  { q: 'What is Bayesian team strength?', a: "Each team carries a Beta distribution over its true win rate. Early in the season, this distribution is wide (high uncertainty). As games accumulate, the posterior tightens. Between seasons, it regresses toward .500 — a principled version of the old Elo regression." },
+  { q: 'What is the Bayesian classifier?', a: 'All features — Bayesian ratings, Elo, rolling form, pitcher ERA/WHIP — feed a logistic regression with an L2 Gaussian prior on each coefficient. This is MAP estimation: the model learns not just which features matter, but how confident to be about each one. The prior strength is cross-validated from the data.' },
   { q: 'What is walk-forward validation?', a: "Each season's model is trained only on prior years and tested on future games it never saw. This gives realistic accuracy estimates and prevents overfitting." },
   { q: 'How is the baseline calculated?', a: 'The baseline is the accuracy from always picking the home team. In MLB, home teams win roughly 54.2% of games.' },
-  { q: 'What does log loss measure?', a: 'Log loss measures calibration. When the model says 70%, those teams should win about 70% of the time. Lower = better.' },
+  { q: 'What does log loss measure?', a: 'Log loss measures calibration. When we say 70%, those teams should win about 70% of the time. The Bayesian logistic regression is trained directly on log loss, making it calibration-first.' },
   { q: 'How often are results updated?', a: 'Predictions are generated before each game day. Results are settled after games complete.' },
 ];
 
@@ -136,8 +139,8 @@ export default function Performance() {
             How the model<br /><em style={{ fontStyle: 'italic', fontWeight: 400 }}>has performed.</em>
           </h1>
           <p style={{ fontSize: 16, color: t.muted, maxWidth: 520, lineHeight: 1.65 }}>
-            The complete record for every Game 163 projection. Win probabilities tested against real outcomes.
-            Walk-forward validation only — no cherry-picking.
+            The complete record for every Game 163 projection. Win probabilities from a Bayesian model
+            tested against real outcomes. Walk-forward validation only — no cherry-picking.
           </p>
         </div>
 

@@ -121,10 +121,10 @@ export default function Home() {
             <em style={{ fontStyle: 'italic', fontWeight: 400 }}>No guesswork.</em>
           </h1>
           <p style={{ fontSize: 17, color: t.muted, maxWidth: 520, lineHeight: 1.7, marginBottom: 36, fontFamily: t.sans }}>
-            Walk-forward validated predictions across every MLB game.
+            Bayesian win-probability model, walk-forward validated across every MLB game.
             Grade A picks hit at{' '}
             <strong style={{ color: t.fg, fontWeight: 600 }}>{o?.acc_grade_A ?? '65'}%</strong>{' '}
-            accuracy — trained on prior seasons only.
+            accuracy — trained on prior seasons only, with no look-ahead.
           </p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <Link to="/predictions">
@@ -228,12 +228,33 @@ export default function Home() {
         <div style={{ paddingBottom: 64, borderBottom: `1px solid ${t.border}` }}>
           <div style={{ fontFamily: t.mono, fontSize: 11, letterSpacing: '.1em', textTransform: 'uppercase', color: t.muted, marginBottom: 8 }}>Methodology</div>
           <h2 style={{ fontFamily: t.serif, fontWeight: 700, fontSize: 28, letterSpacing: '-.02em', marginBottom: 36 }}>How the model works</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 0 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 0 }}>
             {[
-              { n: '01', title: 'Live MLB Data', body: 'Game results, lineups, and pitcher stats pulled daily from the official MLB Stats API. No third-party scraping.' },
-              { n: '02', title: 'Elo + Rolling Form', body: 'Team Elo ratings updated after every game, combined with 10- and 30-game rolling win rate, run differential, and rest days.' },
-              { n: '03', title: 'Pitcher Matchup', body: 'Prior-season ERA and WHIP for each starter — using only stats available before first pitch to prevent data leakage.' },
-              { n: '04', title: 'Walk-Forward Validation', body: 'Each test season is evaluated on a model trained only on prior years. No look-ahead bias. Every prediction is a real out-of-sample forecast.' },
+              {
+                n: '01',
+                title: 'Live MLB Data',
+                body: 'Game results, pitcher ERA/WHIP, and rest-day data pulled daily from the official MLB Stats API before first pitch. No scraping, no third-party sources.',
+              },
+              {
+                n: '02',
+                title: 'Bayesian Team Ratings',
+                body: 'Each team carries a Beta distribution over its true win rate — not a point estimate. Ratings start at an uninformative prior and update after every game. Uncertainty narrows as the season progresses, and regresses toward .500 each spring.',
+              },
+              {
+                n: '03',
+                title: 'Elo + Rolling Form',
+                body: 'Elo captures relative head-to-head strength, updated after every game. Combined with 10- and 30-game rolling win rate, run differential, rest days, and prior-season pitcher ERA and WHIP.',
+              },
+              {
+                n: '04',
+                title: 'Bayesian Logistic Regression',
+                body: 'All features feed a Bayesian classifier with a Gaussian prior on each coefficient — MAP estimation. The prior strength is cross-validated, so the model learns how much to regularize from the data itself.',
+              },
+              {
+                n: '05',
+                title: 'Walk-Forward Validation',
+                body: 'Each season is tested on a model trained only on prior years. No look-ahead bias. Every accuracy number on this site was earned against games the model had never seen.',
+              },
             ].map((c, i) => (
               <div key={c.n} style={{
                 borderTop: `1px solid ${t.border}`,
