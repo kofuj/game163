@@ -5,9 +5,7 @@ description: April's final slate gives us blowouts, collapses, and one genuinely
 slug: seven-games-in
 ---
 
-| Season Acc. | A-Grade Picks | Log Loss | Validated On |
-|---|---|---|---|
-| **61.4%** +7.2 vs baseline | **72.1%** highest confidence | **0.651** calibration score | **7,320** holdout games |
+**Season Acc. 61.4%** *(+7.2 vs baseline)* &nbsp;&nbsp;·&nbsp;&nbsp; **A-Grade Picks 72.1%** *(highest confidence)* &nbsp;&nbsp;·&nbsp;&nbsp; **Log Loss 0.651** *(calibration score)* &nbsp;&nbsp;·&nbsp;&nbsp; **Validated On 7,320** *(holdout games)*
 
 ---
 

@@ -53,6 +53,32 @@ const mdComponents = {
         <code style={{ fontFamily: t.mono, fontSize: 13 }}>{children}</code>
       </pre>,
   hr: () => <hr style={{ border: 'none', borderTop: `1px solid ${t.border}`, margin: '36px 0' }} />,
+  table: ({ children }) => (
+    <div style={{ overflowX: 'auto', margin: '24px 0' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: t.sans, fontSize: 14 }}>
+        {children}
+      </table>
+    </div>
+  ),
+  thead: ({ children }) => (
+    <thead style={{ borderBottom: `2px solid ${t.border}` }}>{children}</thead>
+  ),
+  tbody: ({ children }) => <tbody>{children}</tbody>,
+  tr: ({ children }) => (
+    <tr style={{ borderBottom: `1px solid ${t.border}` }}>{children}</tr>
+  ),
+  th: ({ children }) => (
+    <th style={{
+      padding: '8px 14px', textAlign: 'left', fontFamily: t.mono,
+      fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase',
+      color: t.muted, fontWeight: 500, whiteSpace: 'nowrap',
+    }}>{children}</th>
+  ),
+  td: ({ children }) => (
+    <td style={{ padding: '10px 14px', color: '#333', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+      {children}
+    </td>
+  ),
 };
 
 export default function BlogPost() {
