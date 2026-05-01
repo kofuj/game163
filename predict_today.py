@@ -183,6 +183,8 @@ def append_to_record(pred_df: pd.DataFrame, today_features: pd.DataFrame,
             "grade":         grade,
             "home_win_prob": round(float(prob), 4),
             "elo_diff":      round(float(feat_row.get("elo_diff", 0)), 2),
+            "outcome":       "PENDING",
+            "result":        "",
         })
 
     new_rows = pd.DataFrame(rows)

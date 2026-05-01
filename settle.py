@@ -21,7 +21,9 @@ def main():
         df["result"] = ""
 
     today = date.today().isoformat()
-    pending_mask = (df["outcome"] == "PENDING") & (df["date"].astype(str) < today)
+    # Treat empty string, NaN, and "PENDING" all as unsettled
+    unsettled = df["outcome"].isna() | (df["outcome"].str.strip() == "") | (df["outcome"] == "PENDING")
+    pending_mask = unsettled & (df["date"].astype(str) < today)
     to_settle = df[pending_mask]
 
     if to_settle.empty:
