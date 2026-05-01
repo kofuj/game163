@@ -78,3 +78,72 @@ date,gamePk,away_name,home_name,pick,pick_prob,grade,home_win_prob,elo_diff,outc
 2026-05-01,823066,Los Angeles Dodgers,St. Louis Cardinals,Los Angeles Dodgers,0.6286,B,0.3714,30.6,,
 2026-05-01,823309,Chicago White Sox,San Diego Padres,San Diego Padres,0.5751,C,0.5751,80.11,,
 2026-05-01,823146,Kansas City Royals,Seattle Mariners,Seattle Mariners,0.5586,C,0.5586,58.1,,
+2026-04-25,823229,Miami Marlins,San Francisco Giants,San Francisco Giants,0.5443,C,0.5443,55.05,HIT,2-6
+2026-04-25,822989,Minnesota Twins,Tampa Bay Rays,Tampa Bay Rays,0.5384,C,0.5384,17.77,HIT,1-6
+2026-04-25,824851,Boston Red Sox,Baltimore Orioles,Boston Red Sox,0.5264,C,0.4736,27.23,HIT,17-1
+2026-04-25,823070,Seattle Mariners,St. Louis Cardinals,Seattle Mariners,0.5735,C,0.4265,41.96,HIT,11-9
+2026-04-25,822826,Cleveland Guardians,Toronto Blue Jays,Cleveland Guardians,0.549,C,0.451,1.49,MISS,3-5
+2026-04-25,824613,Washington Nationals,Chicago White Sox,Washington Nationals,0.5735,C,0.4265,-5.06,HIT,6-3
+2026-04-25,825093,San Diego Padres,Arizona Diamondbacks,San Diego Padres,0.5772,C,0.4228,47.03,HIT,6-4
+2026-04-25,822910,Athletics,Texas Rangers,Texas Rangers,0.5408,C,0.5408,48.27,HIT,3-4
+2026-04-25,823799,Pittsburgh Pirates,Milwaukee Brewers,Milwaukee Brewers,0.5751,C,0.5751,64.83,MISS,6-3
+2026-04-25,824527,Detroit Tigers,Cincinnati Reds,Detroit Tigers,0.549,C,0.451,-0.73,MISS,2-9
+2026-04-25,823960,Chicago Cubs,Los Angeles Dodgers,Los Angeles Dodgers,0.5586,C,0.5586,41.11,HIT,4-12
+2026-04-25,824121,Los Angeles Angels,Kansas City Royals,Los Angeles Angels,0.5144,C,0.4856,59.72,MISS,1-12
+2026-04-25,824203,New York Yankees,Houston Astros,New York Yankees,0.5264,C,0.4736,26.51,HIT,8-3
+2026-04-25,824933,Philadelphia Phillies,Atlanta Braves,Atlanta Braves,0.5174,C,0.5174,79.66,MISS,8-5
+2026-04-25,823637,Colorado Rockies,New York Mets,New York Mets,0.5681,C,0.5681,45.1,MISS,3-0
+2026-04-26,824852,Boston Red Sox,Baltimore Orioles,Boston Red Sox,0.5264,C,0.4736,27.24,HIT,5-3
+2026-04-26,824934,Philadelphia Phillies,Atlanta Braves,Atlanta Braves,0.5174,C,0.5174,79.66,HIT,2-6
+2026-04-26,822824,Cleveland Guardians,Toronto Blue Jays,Cleveland Guardians,0.549,C,0.451,1.47,MISS,2-4
+2026-04-26,824528,Detroit Tigers,Cincinnati Reds,Detroit Tigers,0.549,C,0.451,-0.73,HIT,8-3
+2026-04-26,823635,Colorado Rockies,New York Mets,New York Mets,0.5681,C,0.5681,45.09,MISS,3-1
+2026-04-26,823637,Colorado Rockies,New York Mets,New York Mets,0.6062,B,0.6062,57.51,MISS,3-0
+2026-04-26,824612,Washington Nationals,Chicago White Sox,Washington Nationals,0.5735,C,0.4265,-5.08,HIT,2-1
+2026-04-26,824122,Los Angeles Angels,Kansas City Royals,Los Angeles Angels,0.5144,C,0.4856,59.81,MISS,9-11
+2026-04-26,824202,New York Yankees,Houston Astros,New York Yankees,0.5264,C,0.4736,26.36,MISS,4-7
+2026-04-26,823797,Pittsburgh Pirates,Milwaukee Brewers,Milwaukee Brewers,0.5751,C,0.5751,64.82,HIT,0-5
+2026-04-26,823068,Seattle Mariners,St. Louis Cardinals,Seattle Mariners,0.5735,C,0.4265,41.97,HIT,3-2
+2026-04-26,822911,Athletics,Texas Rangers,Texas Rangers,0.5408,C,0.5408,48.21,MISS,2-1
+2026-04-26,825094,San Diego Padres,Arizona Diamondbacks,San Diego Padres,0.5772,C,0.4228,47.03,MISS,7-12
+2026-04-26,823230,Miami Marlins,San Francisco Giants,San Francisco Giants,0.5443,C,0.5443,55.05,HIT,3-6
+2026-04-26,822991,Minnesota Twins,Tampa Bay Rays,Tampa Bay Rays,0.5384,C,0.5384,17.78,HIT,2-4
+2026-04-26,823959,Chicago Cubs,Los Angeles Dodgers,Los Angeles Dodgers,0.5586,C,0.5586,41.1,HIT,0-6
+2026-04-27,823719,Seattle Mariners,Minnesota Twins,Seattle Mariners,0.5772,C,0.4228,21.23,MISS,4-11
+2026-04-27,824609,Los Angeles Angels,Chicago White Sox,Los Angeles Angels,0.561,C,0.439,33.31,MISS,7-8
+2026-04-27,822906,New York Yankees,Texas Rangers,New York Yankees,0.5772,C,0.4228,4.45,HIT,4-2
+2026-04-27,823311,Chicago Cubs,San Diego Padres,Chicago Cubs,0.5264,C,0.4736,25.34,MISS,7-9
+2026-04-27,824446,Tampa Bay Rays,Cleveland Guardians,Tampa Bay Rays,0.5286,C,0.4714,86.39,HIT,3-2
+2026-04-27,823395,St. Louis Cardinals,Pittsburgh Pirates,St. Louis Cardinals,0.5772,C,0.4228,20.63,HIT,4-2
+2026-04-27,822825,Boston Red Sox,Toronto Blue Jays,Boston Red Sox,0.5264,C,0.4736,33.27,HIT,5-0
+2026-04-27,823961,Miami Marlins,Los Angeles Dodgers,Los Angeles Dodgers,0.6041,B,0.6041,78.4,HIT,4-5
+2026-04-28,823390,St. Louis Cardinals,Pittsburgh Pirates,St. Louis Cardinals,0.5772,C,0.4228,20.63,HIT,11-7
+2026-04-28,823473,San Francisco Giants,Philadelphia Phillies,San Francisco Giants,0.5264,C,0.4736,32.17,MISS,0-7
+2026-04-28,824447,Tampa Bay Rays,Cleveland Guardians,Tampa Bay Rays,0.5286,C,0.4714,86.39,HIT,1-0
+2026-04-28,824849,Houston Astros,Baltimore Orioles,Houston Astros,0.5772,C,0.4228,7.18,MISS,3-5
+2026-04-28,824526,Colorado Rockies,Cincinnati Reds,Cincinnati Reds,0.523,C,0.523,19.33,HIT,2-7
+2026-04-28,822823,Boston Red Sox,Toronto Blue Jays,Boston Red Sox,0.5264,C,0.4736,33.27,MISS,0-3
+2026-04-28,823636,Washington Nationals,New York Mets,New York Mets,0.5681,C,0.5681,48.01,HIT,0-8
+2026-04-28,824931,Detroit Tigers,Atlanta Braves,Atlanta Braves,0.5443,C,0.5443,51.33,HIT,2-5
+2026-04-28,823798,Arizona Diamondbacks,Milwaukee Brewers,Milwaukee Brewers,0.5197,C,0.5197,49.8,HIT,2-13
+2026-04-28,822908,New York Yankees,Texas Rangers,New York Yankees,0.5772,C,0.4228,4.44,HIT,3-2
+2026-04-28,825017,Kansas City Royals,Athletics,Kansas City Royals,0.5772,C,0.4228,31.43,HIT,4-1
+2026-04-28,823716,Seattle Mariners,Minnesota Twins,Seattle Mariners,0.5772,C,0.4228,21.23,HIT,7-1
+2026-04-28,824610,Los Angeles Angels,Chicago White Sox,Los Angeles Angels,0.561,C,0.439,33.3,MISS,2-5
+2026-04-28,823310,Chicago Cubs,San Diego Padres,Chicago Cubs,0.5264,C,0.4736,25.34,HIT,8-3
+2026-04-28,823956,Miami Marlins,Los Angeles Dodgers,Los Angeles Dodgers,0.6041,B,0.6041,78.4,MISS,2-1
+2026-04-29,822907,New York Yankees,Texas Rangers,New York Yankees,0.5772,C,0.4228,4.44,MISS,0-3
+2026-04-29,822821,Boston Red Sox,Toronto Blue Jays,Boston Red Sox,0.5264,C,0.4736,33.27,MISS,1-8
+2026-04-29,824445,Tampa Bay Rays,Cleveland Guardians,Tampa Bay Rays,0.5286,C,0.4714,86.39,MISS,1-3
+2026-04-29,824608,Los Angeles Angels,Chicago White Sox,Los Angeles Angels,0.561,C,0.439,33.3,MISS,2-3
+2026-04-29,823717,Seattle Mariners,Minnesota Twins,Seattle Mariners,0.5772,C,0.4228,21.23,HIT,5-3
+2026-04-29,823958,Miami Marlins,Los Angeles Dodgers,Los Angeles Dodgers,0.6041,B,0.6041,78.4,MISS,3-2
+2026-04-29,823312,Chicago Cubs,San Diego Padres,Chicago Cubs,0.5264,C,0.4736,25.34,HIT,5-4
+2026-04-29,824525,Colorado Rockies,Cincinnati Reds,Cincinnati Reds,0.523,C,0.523,19.33,MISS,13-2
+2026-04-29,824930,Detroit Tigers,Atlanta Braves,Atlanta Braves,0.5443,C,0.5443,51.33,HIT,3-4
+2026-04-29,823796,Arizona Diamondbacks,Milwaukee Brewers,Milwaukee Brewers,0.5197,C,0.5197,49.8,MISS,6-2
+2026-04-29,825015,Kansas City Royals,Athletics,Kansas City Royals,0.5772,C,0.4228,31.43,MISS,2-5
+2026-04-29,823392,St. Louis Cardinals,Pittsburgh Pirates,St. Louis Cardinals,0.5772,C,0.4228,20.63,HIT,5-4
+2026-04-29,823633,Washington Nationals,New York Mets,New York Mets,0.5681,C,0.5681,48.01,MISS,14-2
+2026-04-29,823471,San Francisco Giants,Philadelphia Phillies,San Francisco Giants,0.5264,C,0.4736,32.17,MISS,5-6
+2026-04-29,824850,Houston Astros,Baltimore Orioles,Houston Astros,0.5772,C,0.4228,7.18,HIT,11-5
