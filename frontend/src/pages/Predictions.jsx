@@ -68,10 +68,10 @@ export default function Predictions() {
             </span>
           </div>
           <h1 style={{ fontFamily: t.serif, fontWeight: 800, fontSize: 'clamp(32px,5vw,56px)', lineHeight: 1.05, letterSpacing: '-.03em', marginBottom: 12 }}>
-            Today’s Predictions
+            Today's Predictions
           </h1>
           <p style={{ fontSize: 15, color: t.muted, lineHeight: 1.65, maxWidth: 520 }}>
-            Walk-forward model output for every game on today’s schedule. Grade A = highest confidence.
+            Walk-forward model output for every game on today's schedule. Grade A = highest confidence.
           </p>
         </div>
 
@@ -193,18 +193,18 @@ export default function Predictions() {
 
         {/* Grade legend */}
         {!loading && (
-          <div style={{ marginTop: 20, display: ‘flex’, flexDirection: ‘column’, gap: 10, fontFamily: t.mono, fontSize: 12, color: t.muted }}>
-            <div style={{ display: ‘flex’, gap: 24, flexWrap: ‘wrap’ }}>
+          <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10, fontFamily: t.mono, fontSize: 12, color: t.muted }}>
+            <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
               {[
-                { g: ‘A’, label: ‘≥65% — strong Bayesian edge’ },
-                { g: ‘B’, label: ‘58–65% — real edge’ },
-                { g: ‘C’, label: ‘50–58% — marginal edge’ },
+                { g: 'A', label: '≥65% — strong Bayesian edge' },
+                { g: 'B', label: '58–65% — real edge' },
+                { g: 'C', label: '50–58% — marginal edge' },
               ].map(({ g, label }) => (
-                <div key={g} style={{ display: ‘flex’, alignItems: ‘center’, gap: 6 }}>
+                <div key={g} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span style={{
                     width: 18, height: 18, borderRadius: 3, fontSize: 10, fontWeight: 700,
-                    display: ‘flex’, alignItems: ‘center’, justifyContent: ‘center’,
-                    background: gradeColor[g] + ‘15’, color: gradeColor[g], border: `1px solid ${gradeColor[g]}30`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: gradeColor[g] + '15', color: gradeColor[g], border: `1px solid ${gradeColor[g]}30`,
                   }}>{g}</span>
                   {label}
                 </div>
