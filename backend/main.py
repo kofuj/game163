@@ -41,7 +41,7 @@ def _load_record() -> pd.DataFrame:
         df["outcome"] = "PENDING"
     if "result" not in df.columns:
         df["result"] = ""
-    df["outcome"] = df["outcome"].fillna("PENDING")
+    df["outcome"] = df["outcome"].fillna("PENDING").replace("", "PENDING")
     df["result"]  = df["result"].fillna("")
     return df
 
@@ -231,7 +231,8 @@ def settle_record():
         return {"settled": 0, "pending": 0}
 
     today        = date.today().isoformat()
-    pending_mask = (df["outcome"] == "PENDING") & (df["date"].astype(str) < today)
+    unsettled    = df["outcome"].isna() | (df["outcome"].str.strip() == "") | (df["outcome"] == "PENDING")
+    pending_mask = unsettled & (df["date"].astype(str) < today)
     to_settle    = df[pending_mask]
 
     settled = 0
