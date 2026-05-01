@@ -7,13 +7,15 @@ BEFORE the game starts — no data leakage.
 
 Feature groups:
   1. Elo ratings (rolling, updated after each game)
-  2. Recent form (last 10 / last 30 games)
-  3. Rest days
-  4. Home/away splits
-  5. Pitcher quality (ERA, WHIP — prior season or rolling)
-  6. Run differential trends
+  2. Bayesian team strength (Beta-Binomial posteriors)
+  3. Recent form (last 10 / last 30 games)
+  4. Rest days
+  5. Home/away splits
+  6. Pitcher quality (ERA, WHIP — prior season or rolling)
+  7. Run differential trends
 """
 
+import math
 import pandas as pd
 import numpy as np
 from typing import Optional
@@ -99,7 +101,141 @@ def apply_elo(df: pd.DataFrame, season_col: str = "season") -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# 2. Rolling team stats (lag-safe)
+# 2. Bayesian Team Strength (Beta-Binomial)
+# ---------------------------------------------------------------------------
+
+class BayesianTeamStrength:
+    """
+    Maintains a Beta(alpha, beta) posterior over each team's true win rate.
+
+    Why Beta-Binomial?
+    - Conjugate prior for a Bernoulli process (win/loss)
+    - Closed-form updates: win → alpha += 1, loss → beta += 1
+    - Posterior mean = alpha/(alpha+beta) shrinks toward .500 early in season
+    - Posterior std quantifies uncertainty — unlike Elo, which has none
+    - Seasonal regression pulls estimates back toward the prior
+
+    Compared to Elo:
+    - Elo captures relative strength via head-to-head differences
+    - Bayesian model captures absolute win rate with a full posterior distribution
+    - Using both gives complementary information to the classifier
+    """
+
+    PRIOR_W  = 5.0    # pseudo-wins  (~ 10-game uninformative prior at .500)
+    PRIOR_L  = 5.0    # pseudo-losses
+    REGRESS  = 0.30   # pull 30% back to prior between seasons
+    HOME_ADV = 0.035  # empirical home-field boost in win probability
+
+    def __init__(self):
+        self._alpha: dict[int, float] = {}
+        self._beta:  dict[int, float] = {}
+
+    def _ab(self, tid: int) -> tuple[float, float]:
+        return self._alpha.get(tid, self.PRIOR_W), self._beta.get(tid, self.PRIOR_L)
+
+    def mean(self, tid: int) -> float:
+        """Posterior win-rate estimate: E[theta] = alpha/(alpha+beta)."""
+        a, b = self._ab(tid)
+        return a / (a + b)
+
+    def std(self, tid: int) -> float:
+        """Posterior uncertainty: sqrt(Var[theta]) for Beta(alpha, beta)."""
+        a, b = self._ab(tid)
+        n = a + b
+        return math.sqrt(a * b / (n * n * (n + 1)))
+
+    def win_prob(self, home_id: int, away_id: int) -> float:
+        """
+        P(home wins) via normal approximation of P(X_home > X_away),
+        where X_home ~ Beta(α_h, β_h) and X_away ~ Beta(α_a, β_a).
+
+        Normal approximation: P(D > 0) ≈ Φ(μ_D / σ_D)
+        where D = X_home + HOME_ADV - X_away.
+        """
+        mu_h = self.mean(home_id) + self.HOME_ADV
+        mu_a = self.mean(away_id)
+        sigma = math.sqrt(self.std(home_id) ** 2 + self.std(away_id) ** 2 + 1e-9)
+        z = (mu_h - mu_a) / sigma
+        # Standard normal CDF via math.erf (no scipy needed)
+        return 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
+
+    def update(self, winner_id: int, loser_id: int) -> None:
+        """Update posteriors after a game result."""
+        aw, _  = self._ab(winner_id)
+        _,  bl = self._ab(loser_id)
+        self._alpha[winner_id] = aw + 1.0
+        self._beta[loser_id]   = bl + 1.0
+
+    def regress_to_prior(self) -> None:
+        """
+        Apply seasonal regression: pull each team's posterior REGRESS
+        of the way back toward Beta(PRIOR_W, PRIOR_L).
+        Prevents stale estimates from dominating in a new season.
+        """
+        r = self.REGRESS
+        for tid in list(self._alpha.keys()):
+            a, b = self._ab(tid)
+            self._alpha[tid] = a * (1 - r) + self.PRIOR_W * r
+            self._beta[tid]  = b * (1 - r) + self.PRIOR_L * r
+
+
+def apply_bayesian_ratings(df: pd.DataFrame, season_col: str = "season") -> pd.DataFrame:
+    """
+    Walk through games in chronological order, maintaining Beta posteriors
+    for each team, and stamp each row with PRE-GAME Bayesian strength estimates.
+
+    No data leakage: posteriors are updated AFTER each row is stamped.
+
+    New columns:
+        home_bayes_mean  — posterior win-rate mean for home team
+        away_bayes_mean  — posterior win-rate mean for away team
+        home_bayes_std   — posterior uncertainty (σ) for home team
+        away_bayes_std   — posterior uncertainty (σ) for away team
+        bayes_win_prob   — P(home wins) via Beta-Beta normal approximation
+        bayes_diff       — home_bayes_mean − away_bayes_mean (signed edge)
+    """
+    df = df.sort_values("date").copy()
+    bts = BayesianTeamStrength()
+    current_season = None
+
+    h_mean, a_mean = [], []
+    h_std,  a_std  = [], []
+    b_prob         = []
+
+    for _, row in df.iterrows():
+        hid    = int(row["home_id"])
+        aid    = int(row["away_id"])
+        season = row.get(season_col)
+
+        if season != current_season and current_season is not None:
+            bts.regress_to_prior()
+        current_season = season
+
+        # Stamp pre-game estimates BEFORE updating
+        h_mean.append(bts.mean(hid))
+        a_mean.append(bts.mean(aid))
+        h_std.append(bts.std(hid))
+        a_std.append(bts.std(aid))
+        b_prob.append(bts.win_prob(hid, aid))
+
+        # Update posterior with actual result
+        if int(row["home_win"]):
+            bts.update(hid, aid)
+        else:
+            bts.update(aid, hid)
+
+    df["home_bayes_mean"] = h_mean
+    df["away_bayes_mean"] = a_mean
+    df["home_bayes_std"]  = h_std
+    df["away_bayes_std"]  = a_std
+    df["bayes_win_prob"]  = b_prob
+    df["bayes_diff"]      = df["home_bayes_mean"] - df["away_bayes_mean"]
+
+    return df
+
+
+# ---------------------------------------------------------------------------
+# 3. Rolling team stats (lag-safe)
 # ---------------------------------------------------------------------------
 
 def _rolling_team_stat(df: pd.DataFrame, team_id_col: str,
@@ -217,8 +353,12 @@ def add_pitcher_features(df: pd.DataFrame,
 # ---------------------------------------------------------------------------
 
 FEATURE_COLS = [
-    # Elo
+    # Elo (relative head-to-head strength)
     "elo_diff", "elo_win_prob",
+    # Bayesian team strength (absolute win rate + uncertainty)
+    "home_bayes_mean", "away_bayes_mean",
+    "home_bayes_std",  "away_bayes_std",
+    "bayes_win_prob",  "bayes_diff",
     # Rolling form
     "diff_win_L10", "diff_win_L30",
     "diff_runs_scored_L10", "diff_run_diff_L10", "diff_run_diff_L30",
@@ -242,6 +382,7 @@ def build_features(df: pd.DataFrame,
         df["season"] = df["date"].dt.year
 
     df = apply_elo(df)
+    df = apply_bayesian_ratings(df)
     df = build_rolling_features(df)
     df = add_pitcher_features(df, pitcher_stats_by_season)
 
@@ -254,7 +395,7 @@ def build_features(df: pd.DataFrame,
             df[col] = df[col].fillna(fill)
 
     # Drop rows where we don't have enough rolling history (first ~10 games per team)
-    df = df.dropna(subset=["elo_diff", "diff_win_L10"]).reset_index(drop=True)
+    df = df.dropna(subset=["elo_diff", "bayes_win_prob", "diff_win_L10"]).reset_index(drop=True)
 
     return df
 

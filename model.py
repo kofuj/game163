@@ -33,22 +33,50 @@ RESULTS_DIR.mkdir(exist_ok=True)
 # Model factory
 # ---------------------------------------------------------------------------
 
-def make_model(model_type: str = "gbm") -> Pipeline:
+def make_model(model_type: str = "bayes") -> Pipeline:
     """
     Returns a calibrated sklearn Pipeline.
 
     model_type options:
-      "gbm"   → GradientBoostingClassifier  (default, strong baseline)
-      "lr"    → LogisticRegression          (fast, interpretable)
+      "bayes" → Bayesian Logistic Regression (MAP, default)
+                  L2 regularization = Gaussian prior on weights.
+                  Cross-validates prior strength (C) via neg-log-loss.
+                  Naturally well-calibrated probabilities.
+      "gbm"   → GradientBoostingClassifier  (strong non-linear baseline)
+      "lr"    → LogisticRegression          (fast, fixed regularization)
       "rf"    → RandomForestClassifier      (good with limited data)
-
-    To use XGBoost (install with: pip install xgboost):
-      from xgboost import XGBClassifier
-      base = XGBClassifier(n_estimators=300, max_depth=4,
-                           learning_rate=0.05, subsample=0.8,
-                           use_label_encoder=False, eval_metric="logloss")
     """
-    if model_type == "gbm":
+    if model_type == "bayes":
+        # Bayesian Logistic Regression via MAP estimation.
+        #
+        # L2 penalty = Gaussian prior N(0, 1/C) on each coefficient.
+        # LogisticRegressionCV finds the optimal C (prior precision) by
+        # cross-validating on log-loss — i.e., it learns the prior strength
+        # from the data rather than fixing it by hand.
+        #
+        # This is proper Bayesian MAP inference: we start with a prior
+        # that regularizes toward zero, and the data updates our beliefs
+        # about how much each feature (Elo, Bayesian win rate, form, pitcher)
+        # contributes to the outcome.
+        from sklearn.linear_model import LogisticRegressionCV
+        base = LogisticRegressionCV(
+            Cs=np.logspace(-3, 2, 20),  # search prior precision over 5 decades
+            cv=5,
+            penalty="l2",               # Gaussian prior on weights
+            solver="lbfgs",
+            max_iter=1000,
+            random_state=42,
+            scoring="neg_log_loss",     # calibration-focused objective
+        )
+        # LR already outputs calibrated probabilities; isotonic adds a
+        # non-parametric correction for any residual miscalibration.
+        calibrated = CalibratedClassifierCV(base, method="isotonic", cv=3)
+        return Pipeline([
+            ("scaler", StandardScaler()),
+            ("clf", calibrated),
+        ])
+
+    elif model_type == "gbm":
         base = GradientBoostingClassifier(
             n_estimators=200,
             max_depth=3,
@@ -67,7 +95,7 @@ def make_model(model_type: str = "gbm") -> Pipeline:
     else:
         raise ValueError(f"Unknown model_type: {model_type}")
 
-    # Wrap in calibration (isotonic regression fixes overconfident probabilities)
+    # Wrap tree/non-probabilistic models in isotonic calibration
     calibrated = CalibratedClassifierCV(base, method="isotonic", cv=3)
 
     return Pipeline([

@@ -19,7 +19,9 @@ from datetime import date, datetime
 from pathlib import Path
 
 from model import make_model, grade_pick, RESULTS_DIR
-from features import build_features, FEATURE_COLS, apply_elo, build_rolling_features
+from features import (build_features, FEATURE_COLS, apply_elo,
+                      apply_bayesian_ratings, build_rolling_features,
+                      add_pitcher_features)
 
 MODEL_PATH  = Path(__file__).parent / "results" / "trained_model.pkl"
 PREDS_DIR   = Path(__file__).parent / "results" / "daily"
@@ -115,32 +117,23 @@ def get_todays_games(target_date: str = None) -> pd.DataFrame:
 def build_prediction_features(today_df: pd.DataFrame,
                                 history_df: pd.DataFrame,
                                 pitcher_stats_by_season: dict = None) -> pd.DataFrame:
-    """
-    Concatenate historical games + today's games, run feature engineering,
-    then extract just today's rows.
-
-    history_df: full historical game log (what the model was trained on)
-    today_df:   today's games (scores = 0, home_win = placeholder)
-    """
     today_pks = set(today_df["gamePk"])
 
     combined = pd.concat([history_df, today_df], ignore_index=True)
     combined = combined.sort_values("date").reset_index(drop=True)
 
-    # Add season if missing
     if "season" not in combined.columns:
         combined["season"] = combined["date"].dt.year
 
-    combined = build_features(combined, pitcher_stats_by_season)
+    combined = apply_elo(combined)
+    combined = apply_bayesian_ratings(combined)
+    combined = build_rolling_features(combined)
+    combined = add_pitcher_features(combined, pitcher_stats_by_season)
 
-    # Extract only today's games
     today_features = combined[combined["gamePk"].isin(today_pks)].copy()
+    today_features = today_features.fillna(0)
     return today_features
 
-
-# ---------------------------------------------------------------------------
-# Format predictions as a nice table
-# ---------------------------------------------------------------------------
 
 def format_predictions(pred_df: pd.DataFrame) -> pd.DataFrame:
     rows = []
@@ -264,7 +257,11 @@ def predict(target_date: str = None, history_df: pd.DataFrame = None,
         today_features = build_prediction_features(today_df, history_df,
                                                     pitcher_stats_by_season)
     else:
-        today_features = build_features(today_df, pitcher_stats_by_season)
+        today_features = apply_elo(today_df.copy())
+        today_features = apply_bayesian_ratings(today_features)
+        today_features = build_rolling_features(today_features)
+        today_features = add_pitcher_features(today_features, pitcher_stats_by_season)
+        today_features = today_features.fillna(0)
 
     if today_features.empty:
         print("Could not build features for today's games.")
@@ -315,7 +312,7 @@ def predict(target_date: str = None, history_df: pd.DataFrame = None,
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Game 163 MLB Predictor")
     parser.add_argument("--date",   default=None, help="Date (YYYY-MM-DD), default=today")
-    parser.add_argument("--model",  default="gbm", choices=["gbm", "lr", "rf"])
+    parser.add_argument("--model",  default="bayes", choices=["bayes", "gbm", "lr", "rf"])
     parser.add_argument("--retrain", action="store_true", help="Retrain model from history")
     parser.add_argument("--seasons", nargs="+", type=int,
                         default=[2021, 2022, 2023, 2024],
