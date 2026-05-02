@@ -28,14 +28,35 @@ function OutcomeBadge({ outcome }) {
   );
 }
 
-const SORT_OPTIONS = ['Date', 'Confidence', 'Edge'];
+function formatDate(d) {
+  if (!d) return d;
+  return new Date(d + 'T12:00:00').toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+  });
+}
+
+function DayRecord({ picks }) {
+  const settled = picks.filter(p => p.outcome === 'HIT' || p.outcome === 'MISS');
+  const hits = picks.filter(p => p.outcome === 'HIT').length;
+  const pct = settled.length > 0 ? Math.round((hits / settled.length) * 100) : null;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontFamily: t.mono, fontSize: 12 }}>
+      {pct !== null && (
+        <span style={{ color: pct >= 55 ? '#2d6a3f' : pct < 45 ? '#c41230' : t.muted }}>
+          {hits}/{settled.length} correct ({pct}%)
+        </span>
+      )}
+      <span style={{ color: t.faint }}>{picks.length} pick{picks.length !== 1 ? 's' : ''}</span>
+    </div>
+  );
+}
 
 export default function History() {
-  const [data,    setData]    = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [sort,    setSort]    = useState('Date');
-  const [grade,   setGrade]   = useState('All');
-  const [outcome, setOutcome] = useState('All');
+  const [data,     setData]     = useState(null);
+  const [loading,  setLoading]  = useState(true);
+  const [grade,    setGrade]    = useState('All');
+  const [outcome,  setOutcome]  = useState('All');
+  const [expanded, setExpanded] = useState(new Set());
 
   useEffect(() => {
     fetchRecord(500)
@@ -44,23 +65,40 @@ export default function History() {
       .finally(() => setLoading(false));
   }, []);
 
-  const rows = useMemo(() => {
+  // Group filtered rows by date, newest first
+  const grouped = useMemo(() => {
     let list = data?.predictions ?? [];
-
     if (grade !== 'All')   list = list.filter(p => p.grade === grade);
     if (outcome !== 'All') list = list.filter(p => p.outcome === outcome);
 
-    if (sort === 'Date')       list = [...list].sort((a, b) => b.date.localeCompare(a.date));
-    if (sort === 'Confidence') list = [...list].sort((a, b) => b.pick_prob - a.pick_prob);
-    if (sort === 'Edge')       list = [...list].sort((a, b) => b.pick_prob - a.pick_prob);
+    const map = {};
+    list.forEach(p => {
+      if (!map[p.date]) map[p.date] = [];
+      map[p.date].push(p);
+    });
+    return Object.entries(map).sort(([a], [b]) => b.localeCompare(a));
+  }, [data, grade, outcome]);
 
-    return list;
-  }, [data, sort, grade, outcome]);
+  // Auto-expand the most recent date on first load
+  useEffect(() => {
+    if (grouped.length > 0 && expanded.size === 0) {
+      setExpanded(new Set([grouped[0][0]]));
+    }
+  }, [grouped.length]);
 
-  const total   = rows.length;
-  const settled = rows.filter(p => p.outcome === 'HIT' || p.outcome === 'MISS').length;
-  const hits    = rows.filter(p => p.outcome === 'HIT').length;
-  const pct     = settled > 0 ? Math.round((hits / settled) * 100) : null;
+  const toggle = (date) => {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      next.has(date) ? next.delete(date) : next.add(date);
+      return next;
+    });
+  };
+
+  const allPicks  = data?.predictions ?? [];
+  const settled   = allPicks.filter(p => p.outcome === 'HIT' || p.outcome === 'MISS');
+  const hits      = allPicks.filter(p => p.outcome === 'HIT').length;
+  const overallPct = settled.length > 0 ? Math.round((hits / settled.length) * 100) : null;
+  const totalFiltered = grouped.reduce((sum, [, picks]) => sum + picks.length, 0);
 
   return (
     <div style={{ minHeight: '100vh', background: t.bg, color: t.fg, fontFamily: t.sans }}>
@@ -73,31 +111,15 @@ export default function History() {
             Prediction History
           </h1>
           <p style={{ fontSize: 15, color: t.muted, lineHeight: 1.6, maxWidth: 480 }}>
-            Every prediction made by the model. Filter by grade or outcome.
-            {pct !== null && (
-              <> <strong style={{ color: t.fg }}>{hits}/{settled} correct ({pct}%)</strong> on settled picks.</>
+            Every prediction made by the model, grouped by day.
+            {overallPct !== null && (
+              <> <strong style={{ color: t.fg }}>{hits}/{settled.length} correct ({overallPct}%)</strong> on settled picks.</>
             )}
           </p>
         </div>
 
-        {/* Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 24, flexWrap: 'wrap' }}>
-          {/* Sort */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontFamily: t.mono, fontSize: 11, color: t.muted, textTransform: 'uppercase', letterSpacing: '.08em' }}>Sort</span>
-            <div style={{ display: 'flex', gap: 4 }}>
-              {SORT_OPTIONS.map(s => (
-                <button key={s} onClick={() => setSort(s)} style={{
-                  padding: '5px 12px', borderRadius: 3, fontFamily: t.mono, fontSize: 12,
-                  border: `1px solid ${sort === s ? t.fg : t.border}`,
-                  background: sort === s ? t.fg : 'transparent',
-                  color: sort === s ? t.bg : t.muted, cursor: 'pointer',
-                }}>{s}{sort === s ? ' ↓' : ''}</button>
-              ))}
-            </div>
-          </div>
-
-          {/* Grade filter */}
+        {/* Filters */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 28, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontFamily: t.mono, fontSize: 11, color: t.muted, textTransform: 'uppercase', letterSpacing: '.08em' }}>Grade</span>
             <div style={{ display: 'flex', gap: 4 }}>
@@ -112,7 +134,6 @@ export default function History() {
             </div>
           </div>
 
-          {/* Outcome filter */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontFamily: t.mono, fontSize: 11, color: t.muted, textTransform: 'uppercase', letterSpacing: '.08em' }}>Outcome</span>
             <div style={{ display: 'flex', gap: 4 }}>
@@ -128,90 +149,110 @@ export default function History() {
           </div>
 
           <span style={{ fontFamily: t.mono, fontSize: 12, color: t.faint, marginLeft: 'auto' }}>
-            {loading ? 'Loading…' : `${total} pick${total !== 1 ? 's' : ''}`}
+            {loading ? 'Loading…' : `${totalFiltered} pick${totalFiltered !== 1 ? 's' : ''} · ${grouped.length} day${grouped.length !== 1 ? 's' : ''}`}
           </span>
         </div>
 
-        {/* Table */}
-        <div style={{ border: `1px solid ${t.border}`, borderRadius: 8, overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-            <thead>
-              <tr style={{ background: t.surface, borderBottom: `1px solid ${t.border}` }}>
-                {['Date', 'Matchup', 'Result', 'Pick', 'Grade', 'Outcome'].map(h => (
-                  <th key={h} style={{
-                    padding: '12px 16px', textAlign: 'left',
-                    fontFamily: t.mono, fontSize: 11, fontWeight: 500,
-                    letterSpacing: '.07em', textTransform: 'uppercase', color: t.muted,
-                  }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                Array.from({ length: 10 }).map((_, i) => (
-                  <tr key={i} style={{ borderBottom: `1px solid ${t.border}` }}>
-                    {[1,2,3,4,5,6].map(j => (
-                      <td key={j} style={{ padding: '14px 16px' }}>
-                        <div style={{ height: 13, background: t.surface, borderRadius: 4, width: `${50 + (i*j*3)%40}%` }} />
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              ) : rows.length === 0 ? (
-                <tr>
-                  <td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: t.faint, fontFamily: t.mono, fontSize: 13 }}>
-                    No predictions match the selected filters.
-                  </td>
-                </tr>
-              ) : (
-                rows.map((p, i) => {
-                  const c = gradeColor[p.grade] || t.muted;
-                  return (
-                    <tr key={i} className="row-hover" style={{ borderBottom: `1px solid ${t.border}`, transition: 'background .12s' }}>
-                      <td style={{ padding: '14px 16px', fontFamily: t.mono, fontSize: 12, color: t.muted, whiteSpace: 'nowrap' }}>
-                        {p.date}
-                      </td>
-                      <td style={{ padding: '14px 16px', fontFamily: t.mono, fontSize: 13, color: t.fg, fontWeight: 500 }}>
-                        {(() => {
+        {/* Date sections */}
+        {loading ? (
+          <div style={{ border: `1px solid ${t.border}`, borderRadius: 8, overflow: 'hidden' }}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} style={{ padding: '18px 20px', borderBottom: `1px solid ${t.border}`, background: i % 2 === 0 ? t.surface : t.bg }}>
+                <div style={{ height: 13, background: t.border, borderRadius: 4, width: `${20 + i * 8}%` }} />
+              </div>
+            ))}
+          </div>
+        ) : grouped.length === 0 ? (
+          <div style={{ padding: '40px', textAlign: 'center', color: t.faint, fontFamily: t.mono, fontSize: 13, border: `1px solid ${t.border}`, borderRadius: 8 }}>
+            No predictions match the selected filters.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {grouped.map(([date, picks]) => {
+              const open = expanded.has(date);
+              return (
+                <div key={date} style={{ border: `1px solid ${t.border}`, borderRadius: 8, overflow: 'hidden' }}>
+
+                  {/* Date header — clickable */}
+                  <button
+                    onClick={() => toggle(date)}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '14px 20px', background: open ? t.surface : t.bg,
+                      border: 'none', cursor: 'pointer', gap: 16,
+                      borderBottom: open ? `1px solid ${t.border}` : 'none',
+                      transition: 'background .15s',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                      <span style={{ fontFamily: t.serif, fontWeight: 700, fontSize: 15, color: t.fg }}>
+                        {formatDate(date)}
+                      </span>
+                      <DayRecord picks={picks} />
+                    </div>
+                    <span style={{ fontFamily: t.mono, fontSize: 12, color: t.muted, flexShrink: 0 }}>
+                      {open ? '↑ collapse' : '↓ expand'}
+                    </span>
+                  </button>
+
+                  {/* Picks table */}
+                  {open && (
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                      <thead>
+                        <tr style={{ background: t.surface, borderBottom: `1px solid ${t.border}` }}>
+                          {['Matchup', 'Result', 'Pick', 'Grade', 'Outcome'].map(h => (
+                            <th key={h} style={{
+                              padding: '10px 16px', textAlign: 'left',
+                              fontFamily: t.mono, fontSize: 11, fontWeight: 500,
+                              letterSpacing: '.07em', textTransform: 'uppercase', color: t.muted,
+                            }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {picks.map((p, i) => {
+                          const c = gradeColor[p.grade] || t.muted;
                           const [away, home] = (p.matchup || '').split(' @ ');
                           return (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                              <TeamLogo name={away} size={16} />
-                              <span style={{ color: t.muted }}>{away}</span>
-                              <span style={{ color: t.faint, fontSize: 11 }}>@</span>
-                              <TeamLogo name={home} size={16} />
-                              <span>{home}</span>
-                            </div>
+                            <tr key={i} className="row-hover" style={{ borderBottom: i < picks.length - 1 ? `1px solid ${t.border}` : 'none', transition: 'background .12s' }}>
+                              <td style={{ padding: '12px 16px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: t.mono, fontSize: 13 }}>
+                                  <TeamLogo name={away} size={16} />
+                                  <span style={{ color: t.muted }}>{away}</span>
+                                  <span style={{ color: t.faint, fontSize: 11 }}>@</span>
+                                  <TeamLogo name={home} size={16} />
+                                  <span style={{ color: t.fg, fontWeight: 500 }}>{home}</span>
+                                </div>
+                              </td>
+                              <td style={{ padding: '12px 16px', fontFamily: t.mono, fontSize: 13, color: t.muted }}>
+                                {p.result || '—'}
+                              </td>
+                              <td style={{ padding: '12px 16px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <TeamLogo name={p.pick} size={18} />
+                                  <span style={{ fontFamily: t.mono, fontWeight: 600, fontSize: 13, color: c }}>{p.pick}</span>
+                                </div>
+                                <div style={{ fontFamily: t.mono, fontSize: 11, color: t.faint, marginTop: 2 }}>
+                                  {p.pick_prob}%
+                                </div>
+                              </td>
+                              <td style={{ padding: '12px 16px' }}>
+                                <GradeChip grade={p.grade} />
+                              </td>
+                              <td style={{ padding: '12px 16px' }}>
+                                <OutcomeBadge outcome={p.outcome} />
+                              </td>
+                            </tr>
                           );
-                        })()}
-                      </td>
-                      <td style={{ padding: '14px 16px', fontFamily: t.mono, fontSize: 13, color: t.muted }}>
-                        {p.result || '—'}
-                      </td>
-                      <td style={{ padding: '14px 16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <TeamLogo name={p.pick} size={18} />
-                          <span style={{ fontFamily: t.mono, fontWeight: 600, fontSize: 13, color: c }}>
-                            {p.pick}
-                          </span>
-                        </div>
-                        <span style={{ fontFamily: t.mono, fontSize: 11, color: t.faint, marginLeft: 6 }}>
-                          {p.pick_prob}%
-                        </span>
-                      </td>
-                      <td style={{ padding: '14px 16px' }}>
-                        <GradeChip grade={p.grade} />
-                      </td>
-                      <td style={{ padding: '14px 16px' }}>
-                        <OutcomeBadge outcome={p.outcome} />
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Footer */}
         <div style={{ marginTop: 80, paddingTop: 24, borderTop: `1px solid ${t.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
