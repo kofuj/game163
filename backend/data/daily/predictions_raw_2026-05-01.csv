@@ -1,16 +1,16 @@
-gamePk,date,away_name,home_name,home_score,away_score,home_win_prob,grade,elo_diff,pick,pick_prob
-822744,2026-05-01,Milwaukee Brewers,Washington Nationals,0,0,0.3888381336509484,B,3.1229947059623555,Milwaukee Brewers,0.6111618663490517
-823557,2026-05-01,Baltimore Orioles,New York Yankees,0,0,0.5246997107049202,C,71.30712149852661,New York Yankees,0.5246997107049202
-824686,2026-05-01,Arizona Diamondbacks,Chicago Cubs,0,0,0.46920750373472436,C,32.623402846614226,Arizona Diamondbacks,0.5307924962652757
-824287,2026-05-01,Texas Rangers,Detroit Tigers,0,0,0.46920750373472436,C,61.913064516167196,Texas Rangers,0.5307924962652757
-823389,2026-05-01,Cincinnati Reds,Pittsburgh Pirates,0,0,0.4360874549839626,C,49.80637714837849,Cincinnati Reds,0.5639125450160374
-824772,2026-05-01,Houston Astros,Boston Red Sox,0,0,0.41948306145883935,B,14.951499776840592,Houston Astros,0.5805169385411606
-822990,2026-05-01,San Francisco Giants,Tampa Bay Rays,0,0,0.46920750373472436,C,16.003454524201516,San Francisco Giants,0.5307924962652757
-823877,2026-05-01,Philadelphia Phillies,Miami Marlins,0,0,0.4101503941873468,B,17.780629484632755,Philadelphia Phillies,0.5898496058126532
-824366,2026-05-01,Atlanta Braves,Colorado Rockies,0,0,0.3888381336509484,B,-1.3848798848744082,Atlanta Braves,0.6111618663490517
-824041,2026-05-01,New York Mets,Los Angeles Angels,0,0,0.41091523913241707,B,-16.371682433615206,New York Mets,0.5890847608675829
-825012,2026-05-01,Cleveland Guardians,Athletics,0,0,0.3888381336509484,B,-12.071461995484697,Cleveland Guardians,0.6111618663490517
-823713,2026-05-01,Toronto Blue Jays,Minnesota Twins,0,0,0.4360874549839626,C,34.34012544607094,Toronto Blue Jays,0.5639125450160374
-823066,2026-05-01,Los Angeles Dodgers,St. Louis Cardinals,0,0,0.35247879558948264,B,30.60307402619901,Los Angeles Dodgers,0.6475212044105174
-823309,2026-05-01,Chicago White Sox,San Diego Padres,0,0,0.5605215338164011,C,80.10785385159488,San Diego Padres,0.5605215338164011
-823146,2026-05-01,Kansas City Royals,Seattle Mariners,0,0,0.5605215338164011,C,58.10356702464969,Seattle Mariners,0.5605215338164011
+gamePk,date,away_name,home_name,home_score,away_score,home_win_prob,grade,elo_diff,home_pitcher_name,away_pitcher_name,pick,pick_prob
+822744,2026-05-01,Milwaukee Brewers,Washington Nationals,0,0,0.3888381336509484,B,3.1229947059623555,Jake Irvin,Jacob Misiorowski,Milwaukee Brewers,0.6111618663490517
+823557,2026-05-01,Baltimore Orioles,New York Yankees,0,0,0.5246997107049202,C,71.30712149852661,Will Warren,Cade Povich,New York Yankees,0.5246997107049202
+824686,2026-05-01,Arizona Diamondbacks,Chicago Cubs,0,0,0.46920750373472436,C,32.623402846614226,Colin Rea,Zac Gallen,Arizona Diamondbacks,0.5307924962652757
+824287,2026-05-01,Texas Rangers,Detroit Tigers,0,0,0.46920750373472436,C,61.913064516167196,Jack Flaherty,MacKenzie Gore,Texas Rangers,0.5307924962652757
+823389,2026-05-01,Cincinnati Reds,Pittsburgh Pirates,0,0,0.4360874549839626,C,49.80637714837849,Mitch Keller,Brady Singer,Cincinnati Reds,0.5639125450160374
+824772,2026-05-01,Houston Astros,Boston Red Sox,0,0,0.41948306145883935,B,14.951499776840592,Jake Bennett,Mike Burrows,Houston Astros,0.5805169385411606
+822990,2026-05-01,San Francisco Giants,Tampa Bay Rays,0,0,0.46920750373472436,C,16.003454524201516,Shane McClanahan,Robbie Ray,San Francisco Giants,0.5307924962652757
+823877,2026-05-01,Philadelphia Phillies,Miami Marlins,0,0,0.4101503941873468,B,17.780629484632755,Eury Pérez,Zack Wheeler,Philadelphia Phillies,0.5898496058126532
+824366,2026-05-01,Atlanta Braves,Colorado Rockies,0,0,0.3888381336509484,B,-1.3848798848744082,Jose Quintana,Grant Holmes,Atlanta Braves,0.6111618663490517
+824041,2026-05-01,New York Mets,Los Angeles Angels,0,0,0.41091523913241707,B,-16.371682433615206,Walbert Urena,Christian Scott,New York Mets,0.5890847608675829
+825012,2026-05-01,Cleveland Guardians,Athletics,0,0,0.3888381336509484,B,-12.071461995484697,J.T. Ginn,Joey Cantillo,Cleveland Guardians,0.6111618663490517
+823713,2026-05-01,Toronto Blue Jays,Minnesota Twins,0,0,0.4360874549839626,C,34.34012544607094,Simeon Woods Richardson,Patrick Corbin,Toronto Blue Jays,0.5639125450160374
+823066,2026-05-01,Los Angeles Dodgers,St. Louis Cardinals,0,0,0.35247879558948264,B,30.60307402619901,Matthew Liberatore,Emmet Sheehan,Los Angeles Dodgers,0.6475212044105174
+823309,2026-05-01,Chicago White Sox,San Diego Padres,0,0,0.5605215338164011,C,80.10785385159488,Germán Márquez,Noah Schultz,San Diego Padres,0.5605215338164011
+823146,2026-05-01,Kansas City Royals,Seattle Mariners,0,0,0.5605215338164011,C,58.10356702464969,Bryan Woo,Cole Ragans,Seattle Mariners,0.5605215338164011
