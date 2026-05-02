@@ -167,18 +167,29 @@ def _parse_raw_csv(df: pd.DataFrame) -> list[dict]:
     for _, row in df.iterrows():
         home_p   = float(row.get("home_win_prob", 0.5))
         pick_p   = float(row.get("pick_prob", 0.5))
+
+        # Pitcher names — present only in newer CSVs
+        def _name(col):
+            v = row.get(col)
+            if v is None or (isinstance(v, float) and pd.isna(v)):
+                return None
+            s = str(v).strip()
+            return s if s and s.lower() not in ("nan", "none", "") else None
+
         preds.append({
-            "gamePk":        str(row.get("gamePk", "")),
-            "matchup":       f"{row.get('away_name', '')} @ {row.get('home_name', '')}",
-            "away_name":     str(row.get("away_name", "")),
-            "home_name":     str(row.get("home_name", "")),
-            "pick":          str(row.get("pick", "")),
-            "pick_prob":     round(pick_p * 100, 1) if pick_p <= 1 else round(pick_p, 1),
-            "grade":         str(row.get("grade", "C")),
-            "home_win_prob": round(home_p * 100, 1) if home_p <= 1 else round(home_p, 1),
-            "elo_diff":      round(float(row.get("elo_diff", 0)), 1),
-            "outcome":       str(row.get("outcome", "PENDING")),
-            "result":        row.get("result", None),
+            "gamePk":            str(row.get("gamePk", "")),
+            "matchup":           f"{row.get('away_name', '')} @ {row.get('home_name', '')}",
+            "away_name":         str(row.get("away_name", "")),
+            "home_name":         str(row.get("home_name", "")),
+            "pick":              str(row.get("pick", "")),
+            "pick_prob":         round(pick_p * 100, 1) if pick_p <= 1 else round(pick_p, 1),
+            "grade":             str(row.get("grade", "C")),
+            "home_win_prob":     round(home_p * 100, 1) if home_p <= 1 else round(home_p, 1),
+            "elo_diff":          round(float(row.get("elo_diff", 0)), 1),
+            "outcome":           str(row.get("outcome", "PENDING")),
+            "result":            row.get("result", None),
+            "home_pitcher_name": _name("home_pitcher_name"),
+            "away_pitcher_name": _name("away_pitcher_name"),
         })
     return preds
 

@@ -260,7 +260,12 @@ def fetch_probable_pitchers(target_date: str) -> dict[int, dict]:
     Fetch probable starting pitchers for a given date from the schedule endpoint.
 
     Returns:
-        {game_pk: {"home_pitcher_id": int|None, "away_pitcher_id": int|None}}
+        {game_pk: {
+            "home_pitcher_id":   int|None,
+            "away_pitcher_id":   int|None,
+            "home_pitcher_name": str|None,
+            "away_pitcher_name": str|None,
+        }}
     """
     try:
         data = _get(f"{BASE}/schedule", params={
@@ -272,12 +277,14 @@ def fetch_probable_pitchers(target_date: str) -> dict[int, dict]:
         result: dict[int, dict] = {}
         for date_block in data.get("dates", []):
             for g in date_block.get("games", []):
-                pk     = g["gamePk"]
-                home_p = g["teams"]["home"].get("probablePitcher", {}).get("id")
-                away_p = g["teams"]["away"].get("probablePitcher", {}).get("id")
+                pk      = g["gamePk"]
+                home_pp = g["teams"]["home"].get("probablePitcher") or {}
+                away_pp = g["teams"]["away"].get("probablePitcher") or {}
                 result[pk] = {
-                    "home_pitcher_id": int(home_p) if home_p else None,
-                    "away_pitcher_id": int(away_p) if away_p else None,
+                    "home_pitcher_id":   int(home_pp["id"])       if home_pp.get("id")       else None,
+                    "away_pitcher_id":   int(away_pp["id"])       if away_pp.get("id")       else None,
+                    "home_pitcher_name": home_pp.get("fullName")  or None,
+                    "away_pitcher_name": away_pp.get("fullName")  or None,
                 }
         return result
     except Exception:

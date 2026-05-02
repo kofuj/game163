@@ -96,18 +96,20 @@ def get_todays_games(target_date: str = None) -> pd.DataFrame:
             home = g["teams"]["home"]
             away = g["teams"]["away"]
             games.append({
-                "gamePk":          g["gamePk"],
-                "date":            pd.Timestamp(target_date),
-                "home_id":         home["team"]["id"],
-                "home_name":       home["team"]["name"],
-                "away_id":         away["team"]["id"],
-                "away_name":       away["team"]["name"],
-                "home_score":      0,
-                "away_score":      0,
-                "home_win":        0,   # placeholder
-                "season":          int(target_date[:4]),
-                "home_pitcher_id": None,
-                "away_pitcher_id": None,
+                "gamePk":            g["gamePk"],
+                "date":              pd.Timestamp(target_date),
+                "home_id":           home["team"]["id"],
+                "home_name":         home["team"]["name"],
+                "away_id":           away["team"]["id"],
+                "away_name":         away["team"]["name"],
+                "home_score":        0,
+                "away_score":        0,
+                "home_win":          0,   # placeholder
+                "season":            int(target_date[:4]),
+                "home_pitcher_id":   None,
+                "away_pitcher_id":   None,
+                "home_pitcher_name": None,
+                "away_pitcher_name": None,
             })
 
     if not games:
@@ -122,8 +124,10 @@ def get_todays_games(target_date: str = None) -> pd.DataFrame:
             for idx, row in df.iterrows():
                 pk = row["gamePk"]
                 if pk in probable:
-                    df.at[idx, "home_pitcher_id"] = probable[pk]["home_pitcher_id"]
-                    df.at[idx, "away_pitcher_id"] = probable[pk]["away_pitcher_id"]
+                    df.at[idx, "home_pitcher_id"]   = probable[pk]["home_pitcher_id"]
+                    df.at[idx, "away_pitcher_id"]   = probable[pk]["away_pitcher_id"]
+                    df.at[idx, "home_pitcher_name"] = probable[pk]["home_pitcher_name"]
+                    df.at[idx, "away_pitcher_name"] = probable[pk]["away_pitcher_name"]
             n_with_pitchers = df["home_pitcher_id"].notna().sum()
             if n_with_pitchers > 0:
                 print(f"  ⚾ Probable pitchers found for {n_with_pitchers}/{len(df)} games")
@@ -365,10 +369,18 @@ def predict(target_date: str = None, history_df: pd.DataFrame = None,
     preds.to_csv(out_path, index=False)
     print(f"\n💾 Saved to {out_path}")
 
-    # Save raw CSV for the API backend
+    # Save raw CSV for the API backend (includes pitcher names when available)
     raw_cols = ["gamePk", "date", "away_name", "home_name", "home_score", "away_score",
-                "home_win_prob", "grade", "elo_diff"]
+                "home_win_prob", "grade", "elo_diff",
+                "home_pitcher_name", "away_pitcher_name"]
     raw = today_features[[c for c in raw_cols if c in today_features.columns]].copy()
+    # Carry pitcher names from today_df (features df may not preserve them)
+    for col in ["home_pitcher_name", "away_pitcher_name"]:
+        if col not in raw.columns and col in today_df.columns:
+            raw = raw.merge(
+                today_df[["gamePk", col]].drop_duplicates("gamePk"),
+                on="gamePk", how="left"
+            )
     raw["pick"]      = today_features.apply(
         lambda r: r["home_name"] if r["home_win_prob"] >= 0.5 else r["away_name"], axis=1)
     raw["pick_prob"] = today_features["home_win_prob"].apply(

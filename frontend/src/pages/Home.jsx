@@ -17,6 +17,21 @@ function GradeChip({ grade }) {
   );
 }
 
+function PitcherLine({ awayName, homeName }) {
+  if (!awayName && !homeName) return null;
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '6px 0', borderTop: `1px solid ${t.border}`,
+      fontFamily: t.mono, fontSize: 11, color: t.faint,
+    }}>
+      <span title="Away starter">{awayName || '—'}</span>
+      <span style={{ color: t.border, margin: '0 6px' }}>vs</span>
+      <span title="Home starter" style={{ textAlign: 'right' }}>{homeName || '—'}</span>
+    </div>
+  );
+}
+
 function PickCard({ p }) {
   const c = gradeColor[p.grade] || t.muted;
   const edge = (p.pick_prob - 50).toFixed(1);
@@ -55,6 +70,7 @@ function PickCard({ p }) {
       <div style={{ fontFamily: t.mono, fontSize: 11, color: t.faint }}>
         +{edge} edge
       </div>
+      <PitcherLine awayName={p.away_pitcher_name} homeName={p.home_pitcher_name} />
       {p.outcome && p.outcome !== 'PENDING' && (
         <span style={{
           alignSelf: 'flex-start',

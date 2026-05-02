@@ -142,6 +142,7 @@ export default function Predictions() {
                   ))
                   : visible.map(p => {
                     const c = gradeColor[p.grade] || t.muted;
+                    const hasPitchers = p.away_pitcher_name || p.home_pitcher_name;
                     return (
                       <tr key={p.gamePk} className="row-hover" style={{ borderBottom: `1px solid ${t.border}`, transition: 'background .12s' }}>
                         <td style={{ padding: '15px 16px', fontFamily: t.mono, fontSize: 13 }}>
@@ -156,6 +157,17 @@ export default function Predictions() {
                             <TeamLogo name={p.pick} size={20} />
                             {p.pick}
                           </div>
+                          {hasPitchers && (
+                            <div style={{
+                              display: 'flex', alignItems: 'center', gap: 4,
+                              marginTop: 6, fontSize: 11, color: t.faint,
+                            }}>
+                              <span style={{ opacity: 0.5 }}>⚾</span>
+                              <span>{p.away_pitcher_name || '—'}</span>
+                              <span style={{ color: t.border }}>vs</span>
+                              <span>{p.home_pitcher_name || '—'}</span>
+                            </div>
+                          )}
                         </td>
                         <td style={{ padding: '15px 16px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
