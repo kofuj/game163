@@ -139,8 +139,8 @@ def main():
     parser.add_argument("--seasons", nargs="+", type=int,
                         default=[2019, 2020, 2021, 2022, 2023, 2024],
                         help="MLB seasons to use (default: 2019-2024)")
-    parser.add_argument("--model", choices=["bayes", "gbm", "lr", "rf"], default="bayes",
-                        help="Model type (bayes=Bayesian MAP LR [default], gbm=GradientBoosting, lr=Logistic, rf=RandomForest)")
+    parser.add_argument("--model", choices=["bayes", "xgb", "gbm", "lr", "rf"], default="bayes",
+                        help="Model type (bayes=Bayesian MAP LR [default], xgb=XGBoost, gbm=GradientBoosting, lr=Logistic, rf=RandomForest)")
     parser.add_argument("--no-fetch", action="store_true",
                         help="Use cached data only, no API calls")
     parser.add_argument("--no-pitchers", action="store_true",

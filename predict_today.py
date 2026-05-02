@@ -21,7 +21,7 @@ from pathlib import Path
 from model import make_model, grade_pick, RESULTS_DIR
 from features import (build_features, FEATURE_COLS, apply_elo,
                       apply_bayesian_ratings, build_rolling_features,
-                      add_pitcher_features)
+                      add_pitcher_features, add_park_factors)
 
 MODEL_PATH  = Path(__file__).parent / "results" / "trained_model.pkl"
 PREDS_DIR   = Path(__file__).parent / "results" / "daily"
@@ -76,9 +76,10 @@ def load_model():
 def get_todays_games(target_date: str = None) -> pd.DataFrame:
     """
     Pull today's scheduled games from the MLB Stats API.
-    Returns a DataFrame with home_id, away_id, home_name, away_name, gamePk.
+    Returns a DataFrame with home_id, away_id, home_name, away_name, gamePk,
+    and probable pitcher IDs (home_pitcher_id, away_pitcher_id) when available.
     """
-    from data_fetcher import _get, BASE
+    from data_fetcher import _get, BASE, fetch_probable_pitchers
 
     if target_date is None:
         target_date = date.today().isoformat()
@@ -95,19 +96,41 @@ def get_todays_games(target_date: str = None) -> pd.DataFrame:
             home = g["teams"]["home"]
             away = g["teams"]["away"]
             games.append({
-                "gamePk":    g["gamePk"],
-                "date":      pd.Timestamp(target_date),
-                "home_id":   home["team"]["id"],
-                "home_name": home["team"]["name"],
-                "away_id":   away["team"]["id"],
-                "away_name": away["team"]["name"],
-                "home_score": 0,
-                "away_score": 0,
-                "home_win":   0,   # placeholder
-                "season":    int(target_date[:4]),
+                "gamePk":          g["gamePk"],
+                "date":            pd.Timestamp(target_date),
+                "home_id":         home["team"]["id"],
+                "home_name":       home["team"]["name"],
+                "away_id":         away["team"]["id"],
+                "away_name":       away["team"]["name"],
+                "home_score":      0,
+                "away_score":      0,
+                "home_win":        0,   # placeholder
+                "season":          int(target_date[:4]),
+                "home_pitcher_id": None,
+                "away_pitcher_id": None,
             })
 
-    return pd.DataFrame(games)
+    if not games:
+        return pd.DataFrame(games)
+
+    df = pd.DataFrame(games)
+
+    # Fetch probable pitchers and stamp onto the schedule
+    try:
+        probable = fetch_probable_pitchers(target_date)
+        if probable:
+            for idx, row in df.iterrows():
+                pk = row["gamePk"]
+                if pk in probable:
+                    df.at[idx, "home_pitcher_id"] = probable[pk]["home_pitcher_id"]
+                    df.at[idx, "away_pitcher_id"] = probable[pk]["away_pitcher_id"]
+            n_with_pitchers = df["home_pitcher_id"].notna().sum()
+            if n_with_pitchers > 0:
+                print(f"  ⚾ Probable pitchers found for {n_with_pitchers}/{len(df)} games")
+    except Exception as e:
+        print(f"  ⚠️  Could not fetch probable pitchers: {e}")
+
+    return df
 
 
 # ---------------------------------------------------------------------------
@@ -116,7 +139,18 @@ def get_todays_games(target_date: str = None) -> pd.DataFrame:
 
 def build_prediction_features(today_df: pd.DataFrame,
                                 history_df: pd.DataFrame,
-                                pitcher_stats_by_season: dict = None) -> pd.DataFrame:
+                                pitcher_stats_by_season: dict = None,
+                                pitcher_game_logs: dict = None) -> pd.DataFrame:
+    """
+    Build features for today's games using historical context for rolling stats.
+
+    Args:
+        today_df:               Today's games (from get_todays_games)
+        history_df:             Historical games for Elo/Bayesian context
+        pitcher_stats_by_season: Prior-season ERA/WHIP by season
+        pitcher_game_logs:      Current-season game logs by pitcher_id
+                                (fetched fresh each day for today's starters)
+    """
     today_pks = set(today_df["gamePk"])
 
     combined = pd.concat([history_df, today_df], ignore_index=True)
@@ -128,7 +162,8 @@ def build_prediction_features(today_df: pd.DataFrame,
     combined = apply_elo(combined)
     combined = apply_bayesian_ratings(combined)
     combined = build_rolling_features(combined)
-    combined = add_pitcher_features(combined, pitcher_stats_by_season)
+    combined = add_pitcher_features(combined, pitcher_stats_by_season, pitcher_game_logs)
+    combined = add_park_factors(combined)
 
     today_features = combined[combined["gamePk"].isin(today_pks)].copy()
     today_features = today_features.fillna(0)
@@ -208,6 +243,31 @@ def append_to_record(pred_df: pd.DataFrame, today_features: pd.DataFrame,
         print(f"📋 {target_date} already in record — skipped")
 
 
+def fetch_todays_pitcher_logs(today_df: pd.DataFrame,
+                               target_date: str) -> dict:
+    """
+    Fetch current-season game logs for today's probable starters.
+    Returns {pitcher_id: DataFrame[date, ip, er, h, bb, so]}.
+    """
+    from data_fetcher import fetch_season_pitcher_gamelogs
+
+    season = int(target_date[:4])
+    pitcher_ids: set[int] = set()
+    for col in ["home_pitcher_id", "away_pitcher_id"]:
+        if col in today_df.columns:
+            ids = today_df[col].dropna()
+            pitcher_ids.update(int(p) for p in ids)
+
+    if not pitcher_ids:
+        return {}
+
+    print(f"  📈 Fetching current-season game logs for {len(pitcher_ids)} pitchers...")
+    logs = fetch_season_pitcher_gamelogs(season, pitcher_ids)
+    n_with_data = sum(1 for v in logs.values() if not v.empty)
+    print(f"  ✓ Game log data found for {n_with_data}/{len(pitcher_ids)} pitchers")
+    return logs
+
+
 def predict(target_date: str = None, history_df: pd.DataFrame = None,
             model_type: str = "gbm", retrain: bool = False,
             pitcher_stats_by_season: dict = None):
@@ -243,7 +303,7 @@ def predict(target_date: str = None, history_df: pd.DataFrame = None,
             else:
                 raise
 
-    # Fetch today's games
+    # Fetch today's games (includes probable pitchers)
     try:
         today_df = get_todays_games(target_date)
         if today_df.empty:
@@ -254,15 +314,25 @@ def predict(target_date: str = None, history_df: pd.DataFrame = None,
         print(f"⚠️  Could not fetch schedule: {e}")
         return None
 
-    # Build features (needs history for rolling stats)
+    # Fetch current-season pitcher game logs for rolling stats
+    pitcher_game_logs = {}
+    try:
+        pitcher_game_logs = fetch_todays_pitcher_logs(today_df, target_date)
+    except Exception as e:
+        print(f"  ⚠️  Could not fetch pitcher game logs: {e}")
+
+    # Build features (needs history for rolling Elo/Bayesian context)
     if history_df is not None:
-        today_features = build_prediction_features(today_df, history_df,
-                                                    pitcher_stats_by_season)
+        today_features = build_prediction_features(
+            today_df, history_df, pitcher_stats_by_season, pitcher_game_logs
+        )
     else:
         today_features = apply_elo(today_df.copy())
         today_features = apply_bayesian_ratings(today_features)
         today_features = build_rolling_features(today_features)
-        today_features = add_pitcher_features(today_features, pitcher_stats_by_season)
+        today_features = add_pitcher_features(today_features, pitcher_stats_by_season,
+                                               pitcher_game_logs)
+        today_features = add_park_factors(today_features)
         today_features = today_features.fillna(0)
 
     if today_features.empty:
@@ -314,7 +384,7 @@ def predict(target_date: str = None, history_df: pd.DataFrame = None,
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Game 163 MLB Predictor")
     parser.add_argument("--date",   default=None, help="Date (YYYY-MM-DD), default=today")
-    parser.add_argument("--model",  default="bayes", choices=["bayes", "gbm", "lr", "rf"])
+    parser.add_argument("--model",  default="bayes", choices=["bayes", "xgb", "gbm", "lr", "rf"])
     parser.add_argument("--retrain", action="store_true", help="Retrain model from history")
     parser.add_argument("--seasons", nargs="+", type=int,
                         default=[2021, 2022, 2023, 2024],

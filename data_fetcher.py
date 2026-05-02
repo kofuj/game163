@@ -179,6 +179,111 @@ def fetch_season(season: int, include_pitchers: bool = False) -> pd.DataFrame:
     return df
 
 
+def fetch_pitcher_game_logs(pitcher_id: int, season: int) -> pd.DataFrame:
+    """
+    Returns per-start game log for one pitcher in a given season.
+
+    Columns: date, ip, er, h, bb, so, game_pk
+
+    Used for current-season rolling ERA/WHIP (no data leakage — each game
+    only sees starts that happened BEFORE it when features are built).
+    """
+    cache_file = CACHE_DIR / f"gamelogs_{pitcher_id}_{season}.json"
+    if cache_file.exists():
+        try:
+            df = pd.read_json(cache_file, orient="records")
+            if not df.empty:
+                df["date"] = pd.to_datetime(df["date"])
+            return df
+        except Exception:
+            pass  # re-fetch if cache is corrupt
+
+    try:
+        data = _get(f"{BASE}/people/{pitcher_id}/stats", params={
+            "stats":   "gameLog",
+            "season":  season,
+            "group":   "pitching",
+            "sportId": 1,
+        })
+        rows = []
+        splits = data.get("stats", [{}])[0].get("splits", [])
+        for split in splits:
+            s = split.get("stat", {})
+            ip_raw = str(s.get("inningsPitched", "0.0"))
+            try:
+                ip = float(ip_raw)
+            except ValueError:
+                ip = 0.0
+            rows.append({
+                "date":    split.get("date", ""),
+                "ip":      ip,
+                "er":      int(s.get("earnedRuns",   0)),
+                "h":       int(s.get("hits",          0)),
+                "bb":      int(s.get("baseOnBalls",   0)),
+                "so":      int(s.get("strikeOuts",    0)),
+                "game_pk": split.get("game", {}).get("gamePk", 0),
+            })
+
+        if rows:
+            df = pd.DataFrame(rows)
+            df["date"] = pd.to_datetime(df["date"])
+            df = df.sort_values("date").reset_index(drop=True)
+        else:
+            df = pd.DataFrame(columns=["date", "ip", "er", "h", "bb", "so", "game_pk"])
+
+        cache_file.write_text(df.to_json(orient="records", date_format="iso"))
+        time.sleep(0.05)
+        return df
+
+    except Exception:
+        return pd.DataFrame(columns=["date", "ip", "er", "h", "bb", "so", "game_pk"])
+
+
+def fetch_season_pitcher_gamelogs(season: int,
+                                   pitcher_ids: set) -> dict[int, pd.DataFrame]:
+    """
+    Batch-fetch current-season game logs for a set of pitcher IDs.
+    Returns {pitcher_id: DataFrame[date, ip, er, h, bb, so]}.
+    Cached per pitcher per season — subsequent calls are instant.
+    """
+    result: dict[int, pd.DataFrame] = {}
+    for pid in pitcher_ids:
+        try:
+            result[int(pid)] = fetch_pitcher_game_logs(int(pid), season)
+        except Exception:
+            pass
+    return result
+
+
+def fetch_probable_pitchers(target_date: str) -> dict[int, dict]:
+    """
+    Fetch probable starting pitchers for a given date from the schedule endpoint.
+
+    Returns:
+        {game_pk: {"home_pitcher_id": int|None, "away_pitcher_id": int|None}}
+    """
+    try:
+        data = _get(f"{BASE}/schedule", params={
+            "sportId":  1,
+            "date":     target_date,
+            "gameType": "R",
+            "hydrate":  "probablePitcher",
+        })
+        result: dict[int, dict] = {}
+        for date_block in data.get("dates", []):
+            for g in date_block.get("games", []):
+                pk     = g["gamePk"]
+                home_p = g["teams"]["home"].get("probablePitcher", {}).get("id")
+                away_p = g["teams"]["away"].get("probablePitcher", {}).get("id")
+                result[pk] = {
+                    "home_pitcher_id": int(home_p) if home_p else None,
+                    "away_pitcher_id": int(away_p) if away_p else None,
+                }
+        return result
+    except Exception:
+        return {}
+
+
 if __name__ == "__main__":
     # Quick smoke test
     df = fetch_season(2023)

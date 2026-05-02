@@ -76,6 +76,36 @@ def make_model(model_type: str = "bayes") -> Pipeline:
             ("clf", calibrated),
         ])
 
+    elif model_type == "xgb":
+        # XGBoost: gradient-boosted trees with column subsampling.
+        # Often the strongest non-linear option; requires `pip install xgboost`.
+        # Falls back to GBM if xgboost is not installed.
+        try:
+            from xgboost import XGBClassifier
+            base = XGBClassifier(
+                n_estimators=400,
+                max_depth=4,
+                learning_rate=0.03,
+                subsample=0.8,
+                colsample_bytree=0.8,
+                min_child_weight=10,
+                gamma=0.1,
+                reg_alpha=0.1,
+                reg_lambda=1.0,
+                eval_metric="logloss",
+                use_label_encoder=False,
+                random_state=42,
+                n_jobs=-1,
+            )
+        except ImportError:
+            print("  ⚠️  xgboost not installed — falling back to GBM. "
+                  "Run: pip install xgboost")
+            base = GradientBoostingClassifier(
+                n_estimators=200, max_depth=3,
+                learning_rate=0.05, subsample=0.8,
+                min_samples_leaf=20, random_state=42,
+            )
+
     elif model_type == "gbm":
         base = GradientBoostingClassifier(
             n_estimators=200,

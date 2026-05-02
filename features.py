@@ -11,8 +11,9 @@ Feature groups:
   3. Recent form (last 10 / last 30 games)
   4. Rest days
   5. Home/away splits
-  6. Pitcher quality (ERA, WHIP — prior season or rolling)
+  6. Pitcher quality (ERA, WHIP — prior season or rolling current-season)
   7. Run differential trends
+  8. Park factors (static, from Baseball Reference)
 """
 
 import math
@@ -304,24 +305,88 @@ def build_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# 3. Pitcher features
+# 3. Park factors (static — updated from Baseball Reference 2024 data)
+# ---------------------------------------------------------------------------
+
+PARK_FACTORS: dict[str, float] = {
+    # Hitter-friendly (> 1.0)
+    'Colorado Rockies':       1.16,
+    'Boston Red Sox':         1.10,
+    'Texas Rangers':          1.07,
+    'Cincinnati Reds':        1.06,
+    'Philadelphia Phillies':  1.05,
+    'Chicago Cubs':           1.04,
+    'New York Yankees':       1.03,
+    'Pittsburgh Pirates':     1.03,
+    'Washington Nationals':   1.02,
+    'Toronto Blue Jays':      1.02,
+    'Atlanta Braves':         1.02,
+    'Houston Astros':         1.01,
+    'Los Angeles Dodgers':    1.01,
+    'Baltimore Orioles':      1.01,
+    # Neutral
+    'Cleveland Guardians':    1.00,
+    'Chicago White Sox':      1.00,
+    'Tampa Bay Rays':         1.00,
+    'Kansas City Royals':     0.99,
+    'New York Mets':          0.99,
+    'St. Louis Cardinals':    0.99,
+    # Pitcher-friendly (< 1.0)
+    'Arizona Diamondbacks':   0.98,
+    'Minnesota Twins':        0.98,
+    'Detroit Tigers':         0.97,
+    'Seattle Mariners':       0.97,
+    'Los Angeles Angels':     0.97,
+    'Miami Marlins':          0.96,
+    'San Francisco Giants':   0.96,
+    'Milwaukee Brewers':      0.96,
+    'San Diego Padres':       0.95,
+    'Athletics':              0.95,
+}
+
+
+def add_park_factors(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Stamp each game with the home team's park factor.
+    A park factor > 1.0 boosts run scoring; < 1.0 suppresses it.
+    Higher park factors modestly benefit the home team (familiar environment).
+    """
+    df = df.copy()
+    df["park_factor"] = df["home_name"].map(PARK_FACTORS).fillna(1.0)
+    return df
+
+
+# ---------------------------------------------------------------------------
+# 4. Pitcher features
 # ---------------------------------------------------------------------------
 
 def add_pitcher_features(df: pd.DataFrame,
-                          pitcher_stats_by_season: Optional[dict] = None) -> pd.DataFrame:
+                          pitcher_stats_by_season: Optional[dict] = None,
+                          pitcher_game_logs: Optional[dict] = None,
+                          rolling_window: int = 5) -> pd.DataFrame:
     """
-    Merge prior-season pitcher ERA and WHIP onto each game.
+    Merge pitcher ERA and WHIP onto each game.
 
-    pitcher_stats_by_season: dict mapping {prior_season_int: DataFrame}
-        where each DataFrame has index=pitcher_id and cols [era, whip].
-        Games in season N use stats from season N-1 (no leakage).
+    Priority order for each pitcher:
+      1. Current-season rolling stats from game logs (if pitcher_game_logs provided
+         and pitcher has >= 2 starts before game date)
+      2. Prior-season totals from pitcher_stats_by_season (season N uses N-1 data)
+      3. League average fallback (4.30 ERA, 1.32 WHIP)
+
+    Args:
+        pitcher_stats_by_season: {prior_season_int: DataFrame(index=pitcher_id)}
+        pitcher_game_logs:       {pitcher_id: DataFrame[date, ip, er, h, bb]}
+        rolling_window:          Number of recent starts for rolling stats
     """
     league_avg_era  = 4.30
     league_avg_whip = 1.32
+    df = df.copy()
 
-    if (pitcher_stats_by_season is None
-            or not pitcher_stats_by_season
-            or "home_pitcher_id" not in df.columns):
+    has_pitcher_ids = "home_pitcher_id" in df.columns
+    has_prior       = pitcher_stats_by_season is not None and len(pitcher_stats_by_season) > 0
+    has_rolling     = pitcher_game_logs is not None and len(pitcher_game_logs) > 0
+
+    if not has_pitcher_ids and not has_rolling:
         df["home_pitcher_era"]  = league_avg_era
         df["away_pitcher_era"]  = league_avg_era
         df["home_pitcher_whip"] = league_avg_whip
@@ -329,27 +394,89 @@ def add_pitcher_features(df: pd.DataFrame,
         df["pitcher_era_diff"]  = 0.0
         return df
 
-    def lookup(pid, season, col, default):
+    # --- Fast vectorized path: prior-season only (used in training pipeline) ---
+    if has_pitcher_ids and has_prior and not has_rolling:
+        def lookup(pid, season, col, default):
+            stats = pitcher_stats_by_season.get(int(season) - 1)
+            if stats is None or pd.isna(pid):
+                return default
+            pid_int = int(pid)
+            return stats.at[pid_int, col] if pid_int in stats.index else default
+
+        df["home_pitcher_era"]  = df.apply(
+            lambda r: lookup(r["home_pitcher_id"], r["season"], "era",  league_avg_era),  axis=1)
+        df["away_pitcher_era"]  = df.apply(
+            lambda r: lookup(r["away_pitcher_id"], r["season"], "era",  league_avg_era),  axis=1)
+        df["home_pitcher_whip"] = df.apply(
+            lambda r: lookup(r["home_pitcher_id"], r["season"], "whip", league_avg_whip), axis=1)
+        df["away_pitcher_whip"] = df.apply(
+            lambda r: lookup(r["away_pitcher_id"], r["season"], "whip", league_avg_whip), axis=1)
+        df["pitcher_era_diff"]  = df["away_pitcher_era"] - df["home_pitcher_era"]
+        return df
+
+    # --- Row-by-row path: rolling current-season stats (used for daily predictions) ---
+    def prior_lookup(pid, season, col, default):
+        if not has_prior:
+            return default
         stats = pitcher_stats_by_season.get(int(season) - 1)
         if stats is None or pd.isna(pid):
             return default
         pid_int = int(pid)
-        return stats.at[pid_int, col] if pid_int in stats.index else default
+        return float(stats.at[pid_int, col]) if pid_int in stats.index else default
 
-    df["home_pitcher_era"]  = df.apply(
-        lambda r: lookup(r["home_pitcher_id"], r["season"], "era",  league_avg_era),  axis=1)
-    df["away_pitcher_era"]  = df.apply(
-        lambda r: lookup(r["away_pitcher_id"], r["season"], "era",  league_avg_era),  axis=1)
-    df["home_pitcher_whip"] = df.apply(
-        lambda r: lookup(r["home_pitcher_id"], r["season"], "whip", league_avg_whip), axis=1)
-    df["away_pitcher_whip"] = df.apply(
-        lambda r: lookup(r["away_pitcher_id"], r["season"], "whip", league_avg_whip), axis=1)
+    def rolling_lookup(pid, game_date, col):
+        """Return rolling stat or None if not enough data."""
+        if not has_rolling or pd.isna(pid):
+            return None
+        logs = pitcher_game_logs.get(int(pid))
+        if logs is None or logs.empty:
+            return None
+        log_dates = pd.to_datetime(logs["date"])
+        prior = logs[log_dates < pd.Timestamp(game_date)].tail(rolling_window)
+        if len(prior) < 2:
+            return None
+        total_ip = float(prior["ip"].sum())
+        if total_ip <= 0:
+            return None
+        if col == "era":
+            return min(float(prior["er"].sum()) / total_ip * 9, 15.0)
+        elif col == "whip":
+            return min(float((prior["h"] + prior["bb"]).sum()) / total_ip, 4.0)
+        return None
+
+    home_era_l, away_era_l, home_whip_l, away_whip_l = [], [], [], []
+
+    for _, row in df.iterrows():
+        season    = int(row.get("season", pd.Timestamp(row["date"]).year))
+        game_date = pd.Timestamp(row["date"])
+        h_pid     = row.get("home_pitcher_id") if has_pitcher_ids else None
+        a_pid     = row.get("away_pitcher_id") if has_pitcher_ids else None
+
+        # Tier 2: prior-season fallback
+        h_era  = prior_lookup(h_pid, season, "era",  league_avg_era)
+        a_era  = prior_lookup(a_pid, season, "era",  league_avg_era)
+        h_whip = prior_lookup(h_pid, season, "whip", league_avg_whip)
+        a_whip = prior_lookup(a_pid, season, "whip", league_avg_whip)
+
+        # Tier 1: rolling override (if enough current-season starts)
+        r = rolling_lookup(h_pid, game_date, "era");  h_era  = r if r is not None else h_era
+        r = rolling_lookup(a_pid, game_date, "era");  a_era  = r if r is not None else a_era
+        r = rolling_lookup(h_pid, game_date, "whip"); h_whip = r if r is not None else h_whip
+        r = rolling_lookup(a_pid, game_date, "whip"); a_whip = r if r is not None else a_whip
+
+        home_era_l.append(h_era);   away_era_l.append(a_era)
+        home_whip_l.append(h_whip); away_whip_l.append(a_whip)
+
+    df["home_pitcher_era"]  = home_era_l
+    df["away_pitcher_era"]  = away_era_l
+    df["home_pitcher_whip"] = home_whip_l
+    df["away_pitcher_whip"] = away_whip_l
     df["pitcher_era_diff"]  = df["away_pitcher_era"] - df["home_pitcher_era"]
     return df
 
 
 # ---------------------------------------------------------------------------
-# 4. Master feature builder
+# 5. Master feature builder
 # ---------------------------------------------------------------------------
 
 FEATURE_COLS = [
@@ -359,24 +486,34 @@ FEATURE_COLS = [
     "home_bayes_mean", "away_bayes_mean",
     "home_bayes_std",  "away_bayes_std",
     "bayes_win_prob",  "bayes_diff",
-    # Rolling form
+    # Rolling form — differential and individual team stats
     "diff_win_L10", "diff_win_L30",
+    "home_win_L10", "away_win_L10",
     "diff_runs_scored_L10", "diff_run_diff_L10", "diff_run_diff_L30",
+    "home_run_diff_L10", "away_run_diff_L10",
     # Rest
     "diff_rest_days", "home_rest_days", "away_rest_days",
     # Pitcher
     "pitcher_era_diff", "home_pitcher_era", "away_pitcher_era",
     "home_pitcher_whip", "away_pitcher_whip",
+    # Park factors
+    "park_factor",
 ]
 
 TARGET_COL = "home_win"
 
 
 def build_features(df: pd.DataFrame,
-                    pitcher_stats_by_season: Optional[dict] = None) -> pd.DataFrame:
+                    pitcher_stats_by_season: Optional[dict] = None,
+                    pitcher_game_logs: Optional[dict] = None) -> pd.DataFrame:
     """
-    Full pipeline: raw game df → feature-rich df ready for modeling.
-    pitcher_stats_by_season: dict {prior_season: DataFrame(index=pitcher_id)}
+    Full pipeline: raw game df -> feature-rich df ready for modeling.
+
+    Args:
+        pitcher_stats_by_season: {prior_season: DataFrame(index=pitcher_id)}
+        pitcher_game_logs:       {pitcher_id: DataFrame[date, ip, er, h, bb]}
+                                 When provided, uses rolling current-season stats
+                                 in place of (or to supplement) prior-season totals.
     """
     if "season" not in df.columns:
         df["season"] = df["date"].dt.year
@@ -384,7 +521,8 @@ def build_features(df: pd.DataFrame,
     df = apply_elo(df)
     df = apply_bayesian_ratings(df)
     df = build_rolling_features(df)
-    df = add_pitcher_features(df, pitcher_stats_by_season)
+    df = add_pitcher_features(df, pitcher_stats_by_season, pitcher_game_logs)
+    df = add_park_factors(df)
 
     # Fill pitcher NaNs with league averages (no pitcher data = league average)
     pitcher_cols = ["home_pitcher_era", "away_pitcher_era",
@@ -393,6 +531,10 @@ def build_features(df: pd.DataFrame,
         if col in df.columns:
             fill = 0.0 if "diff" in col else (4.30 if "era" in col else 1.32)
             df[col] = df[col].fillna(fill)
+
+    # Fill park factor NaN (unknown home team)
+    if "park_factor" in df.columns:
+        df["park_factor"] = df["park_factor"].fillna(1.0)
 
     # Drop rows where we don't have enough rolling history (first ~10 games per team)
     df = df.dropna(subset=["elo_diff", "bayes_win_prob", "diff_win_L10"]).reset_index(drop=True)
