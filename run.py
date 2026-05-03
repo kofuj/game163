@@ -134,6 +134,45 @@ def print_report(overall: dict, by_season: pd.DataFrame):
     print()
 
 
+def _extend_with_recent_context(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Append 2025 and current-year game data on top of the stable history cache.
+
+    The permanent cache covers only complete seasons (2019-2024) so that it
+    never needs to be invalidated.  In-progress seasons are fetched fresh here
+    (data_fetcher has its own per-day cache so this is fast) and appended only
+    for use as rolling-feature context — they are NOT written back to the
+    stable parquet cache and NOT used to retrain the model.
+    """
+    from data_fetcher import fetch_season
+    from datetime import date as _date
+
+    current_year = _date.today().year
+    cached_seasons = set(df["season"].unique())
+    context_seasons = [s for s in range(2025, current_year + 1) if s not in cached_seasons]
+
+    if not context_seasons:
+        return df
+
+    print(f"\n📈 Extending history with recent context seasons: {context_seasons}")
+    extras = []
+    for s in context_seasons:
+        try:
+            ctx = fetch_season(s)
+            print(f"  ✓ {s}: {len(ctx):,} games")
+            extras.append(ctx)
+        except Exception as e:
+            print(f"  ⚠️  Could not fetch {s}: {e}")
+
+    if not extras:
+        return df
+
+    combined = pd.concat([df] + extras, ignore_index=True)
+    combined["season"] = combined["date"].dt.year
+    print(f"  Total context: {len(combined):,} games ({combined['season'].min()}–{combined['season'].max()})")
+    return combined
+
+
 def main():
     parser = argparse.ArgumentParser(description="Game 163 MLB model runner")
     parser.add_argument("--seasons", nargs="+", type=int,
@@ -177,7 +216,12 @@ def main():
 
     if args.predict_only:
         from predict_today import predict
-        predict(target_date=args.date, history_df=df,
+        # Extend history with recent seasons for accurate rolling features.
+        # The stable cache only covers complete seasons (2019-2024); 2025 and the
+        # current year must be fetched fresh so L10 form/rest/Elo reflect actual
+        # recent games rather than end-of-2024 state.
+        history_df = _extend_with_recent_context(df)
+        predict(target_date=args.date, history_df=history_df,
                 pitcher_stats_by_season=pitcher_stats_by_season)
         return
 
