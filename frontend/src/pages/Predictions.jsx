@@ -14,7 +14,7 @@ function GradeChip({ grade }) {
   );
 }
 
-function OutcomeBadge({ outcome }) {
+function OutcomeBadge({ outcome, result }) {
   if (!outcome || outcome === 'PENDING') return (
     <span style={{
       padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600, fontFamily: t.mono,
@@ -23,12 +23,132 @@ function OutcomeBadge({ outcome }) {
   );
   const hit = outcome === 'HIT';
   return (
-    <span style={{
-      padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600, fontFamily: t.mono,
-      background: hit ? '#2d6a3f15' : '#c4123015',
-      color: hit ? '#2d6a3f' : '#c41230',
-      border: `1px solid ${hit ? '#2d6a3f30' : '#c4123030'}`,
-    }}>{outcome}</span>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
+      <span style={{
+        padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600, fontFamily: t.mono,
+        background: hit ? '#2d6a3f15' : '#c4123015',
+        color: hit ? '#2d6a3f' : '#c41230',
+        border: `1px solid ${hit ? '#2d6a3f30' : '#c4123030'}`,
+      }}>{outcome}</span>
+      {result && <span style={{ fontFamily: t.mono, fontSize: 11, color: t.faint }}>{result}</span>}
+    </div>
+  );
+}
+
+// Builds a list of edge factors to show for a pick
+function buildEdgeFactors(p) {
+  const e = p.edge;
+  if (!e) return [];
+  const factors = [];
+
+  // Form: L10 win rate
+  if (e.pick_win_l10 != null && e.opp_win_l10 != null) {
+    const pickW  = Math.round(e.pick_win_l10 * 10);
+    const oppW   = Math.round(e.opp_win_l10  * 10);
+    const diff   = pickW - oppW;
+    const good   = diff >= 0;
+    factors.push({
+      key: 'form',
+      label: 'Form',
+      value: `${pickW}–${10 - pickW} L10`,
+      sub: diff !== 0 ? `opp ${oppW}–${10 - oppW}` : 'even',
+      positive: good,
+    });
+  }
+
+  // Pitching matchup
+  if (e.pick_era != null && e.opp_era != null) {
+    const diff = e.opp_era - e.pick_era;          // positive = pick SP is better
+    const pickName = p.pick === p.home_name
+      ? p.home_pitcher_name : p.away_pitcher_name;
+    const oppName  = p.pick === p.home_name
+      ? p.away_pitcher_name : p.home_pitcher_name;
+    factors.push({
+      key: 'pitching',
+      label: 'SP ERA',
+      value: e.pick_era.toFixed(2),
+      sub: `opp ${e.opp_era.toFixed(2)}`,
+      positive: diff > 0.3,
+      neutral: Math.abs(diff) <= 0.3,
+      pickName,
+      oppName,
+    });
+  }
+
+  // Bayesian team strength
+  if (e.pick_bayes != null && e.opp_bayes != null) {
+    const diff = e.pick_bayes - e.opp_bayes;
+    if (Math.abs(diff) >= 2) {
+      factors.push({
+        key: 'bayes',
+        label: 'Win rate',
+        value: `${e.pick_bayes.toFixed(1)}%`,
+        sub: `opp ${e.opp_bayes.toFixed(1)}%`,
+        positive: diff > 0,
+      });
+    }
+  }
+
+  // Rest advantage
+  if (e.pick_rest != null && e.opp_rest != null) {
+    const diff = e.pick_rest - e.opp_rest;
+    if (diff >= 1) {
+      factors.push({
+        key: 'rest',
+        label: 'Rest',
+        value: `${Math.round(e.pick_rest)}d`,
+        sub: `opp ${Math.round(e.opp_rest)}d`,
+        positive: true,
+      });
+    }
+  }
+
+  // Park factor (only show if notable)
+  if (e.park_factor != null) {
+    const pf = e.park_factor;
+    if (pf >= 1.05) {
+      factors.push({ key: 'park', label: 'Park', value: `${pf.toFixed(2)}×`, sub: "hitter-friendly", positive: null });
+    } else if (pf <= 0.96) {
+      factors.push({ key: 'park', label: 'Park', value: `${pf.toFixed(2)}×`, sub: "pitcher-friendly", positive: null });
+    }
+  }
+
+  return factors;
+}
+
+function EdgeFactors({ p }) {
+  const factors = buildEdgeFactors(p);
+  if (!factors.length) return null;
+
+  return (
+    <div style={{
+      display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10,
+      paddingTop: 10, borderTop: `1px solid ${t.border}`,
+    }}>
+      {factors.map(f => {
+        const color = f.positive === true ? '#2d6a3f'
+          : f.positive === false ? '#c41230'
+          : t.muted;
+        return (
+          <div key={f.key} style={{
+            display: 'flex', flexDirection: 'column', gap: 1,
+            padding: '5px 9px', borderRadius: 5,
+            background: t.surface, border: `1px solid ${t.border}`,
+            minWidth: 64,
+          }}>
+            <span style={{ fontFamily: t.mono, fontSize: 10, color: t.faint, letterSpacing: '.06em', textTransform: 'uppercase' }}>
+              {f.label}
+            </span>
+            <span style={{ fontFamily: t.mono, fontSize: 12, fontWeight: 700, color }}>
+              {f.value}
+            </span>
+            <span style={{ fontFamily: t.mono, fontSize: 10, color: t.faint }}>
+              {f.sub}
+            </span>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -71,7 +191,7 @@ export default function Predictions() {
             Today's Predictions
           </h1>
           <p style={{ fontSize: 15, color: t.muted, lineHeight: 1.65, maxWidth: 520 }}>
-            Walk-forward model output for every game on today's schedule. Grade A = highest confidence.
+            Walk-forward model output for every game on today's schedule. Each pick shows the key factors driving the edge.
           </p>
         </div>
 
@@ -114,89 +234,95 @@ export default function Predictions() {
           </div>
         )}
 
-        {/* Table */}
+        {/* Cards */}
         {!error && (
-          <div style={{ border: `1px solid ${t.border}`, borderRadius: 8, overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-              <thead>
-                <tr style={{ borderBottom: `1px solid ${t.border}`, background: t.surface }}>
-                  {['Game / Pick', 'Win Probability', 'Grade', 'Elo Edge', 'Result'].map(h => (
-                    <th key={h} style={{
-                      textAlign: h === 'Result' ? 'right' : 'left',
-                      padding: '13px 16px',
-                      fontFamily: t.mono, fontSize: 11, fontWeight: 500,
-                      letterSpacing: '.07em', textTransform: 'uppercase',
-                      color: t.muted,
-                    }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {loading
-                  ? Array.from({ length: 8 }).map((_, i) => (
-                    <tr key={i} style={{ borderBottom: `1px solid ${t.border}` }}>
-                      <td colSpan={5} style={{ padding: '16px' }}>
-                        <div style={{ height: 13, background: t.surface, borderRadius: 4, width: `${60 + (i * 7) % 35}%` }} />
-                      </td>
-                    </tr>
-                  ))
-                  : visible.map(p => {
-                    const c = gradeColor[p.grade] || t.muted;
-                    const hasPitchers = p.away_pitcher_name || p.home_pitcher_name;
-                    return (
-                      <tr key={p.gamePk} className="row-hover" style={{ borderBottom: `1px solid ${t.border}`, transition: 'background .12s' }}>
-                        <td style={{ padding: '15px 16px', fontFamily: t.mono, fontSize: 13 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: t.faint, fontSize: 11, marginBottom: 5 }}>
-                            <TeamLogo name={p.away_name} size={14} />
-                            {p.away_name}
-                            <span>@</span>
-                            <TeamLogo name={p.home_name} size={14} />
-                            {p.home_name}
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontWeight: 600, color: t.fg }}>
-                            <TeamLogo name={p.pick} size={20} />
-                            {p.pick}
-                          </div>
-                          {hasPitchers && (
-                            <div style={{
-                              display: 'flex', alignItems: 'center', gap: 4,
-                              marginTop: 6, fontSize: 11, color: t.faint,
-                            }}>
-                              <span style={{ opacity: 0.5 }}>⚾</span>
-                              <span>{p.away_pitcher_name || '—'}</span>
-                              <span style={{ color: t.border }}>vs</span>
-                              <span>{p.home_pitcher_name || '—'}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {loading
+              ? Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} style={{ border: `1px solid ${t.border}`, borderRadius: 8, padding: '20px 22px', background: t.bg }}>
+                  <div style={{ height: 12, background: t.surface, borderRadius: 4, width: `${45 + (i * 9) % 40}%`, marginBottom: 10 }} />
+                  <div style={{ height: 16, background: t.surface, borderRadius: 4, width: `${30 + (i * 7) % 30}%`, marginBottom: 14 }} />
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {[60, 80, 70].map((w, j) => (
+                      <div key={j} style={{ height: 46, background: t.surface, borderRadius: 5, width: w }} />
+                    ))}
+                  </div>
+                </div>
+              ))
+              : visible.map(p => {
+                const c = gradeColor[p.grade] || t.muted;
+                const hasPitchers = p.away_pitcher_name || p.home_pitcher_name;
+                return (
+                  <div key={p.gamePk} style={{
+                    border: `1px solid ${t.border}`, borderRadius: 8,
+                    background: t.bg, overflow: 'hidden',
+                  }}>
+                    {/* Top bar: matchup + grade + outcome */}
+                    <div style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '14px 20px', borderBottom: `1px solid ${t.border}`,
+                      background: t.surface, flexWrap: 'wrap', gap: 10,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: t.mono, fontSize: 12, color: t.muted }}>
+                        <TeamLogo name={p.away_name} size={15} />
+                        <span>{p.away_name}</span>
+                        <span style={{ color: t.faint }}>@</span>
+                        <TeamLogo name={p.home_name} size={15} />
+                        <span>{p.home_name}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <GradeChip grade={p.grade} />
+                        <OutcomeBadge outcome={p.outcome} result={p.result} />
+                      </div>
+                    </div>
+
+                    {/* Body */}
+                    <div style={{ padding: '16px 20px' }}>
+
+                      {/* Pick + probability */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                          <TeamLogo name={p.pick} size={26} />
+                          <div>
+                            <div style={{ fontFamily: t.serif, fontWeight: 700, fontSize: 17, color: t.fg }}>
+                              {p.pick}
                             </div>
-                          )}
-                        </td>
-                        <td style={{ padding: '15px 16px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <div style={{ width: 72, height: 4, background: t.border, borderRadius: 99 }}>
-                              <div style={{ height: '100%', borderRadius: 99, width: `${((p.pick_prob - 50) / 50) * 100}%`, background: c }} />
-                            </div>
-                            <span style={{ fontFamily: t.mono, fontWeight: 600, fontSize: 13, color: c }}>{p.pick_prob}%</span>
+                            {hasPitchers && (
+                              <div style={{ fontFamily: t.mono, fontSize: 11, color: t.faint, marginTop: 2 }}>
+                                ⚾ {p.away_pitcher_name || '—'} vs {p.home_pitcher_name || '—'}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontFamily: t.mono, fontWeight: 700, fontSize: 22, color: c, lineHeight: 1 }}>
+                            {p.pick_prob}%
                           </div>
                           <div style={{ fontFamily: t.mono, fontSize: 11, color: t.faint, marginTop: 3 }}>
                             +{(p.pick_prob - 50).toFixed(1)} edge
                           </div>
-                        </td>
-                        <td style={{ padding: '15px 16px' }}><GradeChip grade={p.grade} /></td>
-                        <td style={{ padding: '15px 16px', fontFamily: t.mono, fontSize: 13, color: t.muted }}>
-                          {p.elo_diff > 0 ? '+' : ''}{p.elo_diff}
-                        </td>
-                        <td style={{ padding: '15px 16px', textAlign: 'right' }}>
-                          <OutcomeBadge outcome={p.outcome} />
-                          {p.result && <div style={{ fontFamily: t.mono, fontSize: 11, color: t.faint, marginTop: 3 }}>{p.result}</div>}
-                        </td>
-                      </tr>
-                    );
-                  })
-                }
-              </tbody>
-            </table>
+                        </div>
+                      </div>
+
+                      {/* Probability bar */}
+                      <div style={{ height: 3, background: t.border, borderRadius: 99, marginBottom: 4 }}>
+                        <div style={{
+                          height: '100%', borderRadius: 99,
+                          width: `${((p.pick_prob - 50) / 50) * 100}%`,
+                          background: c,
+                        }} />
+                      </div>
+
+                      {/* Edge factors */}
+                      <EdgeFactors p={p} />
+                    </div>
+                  </div>
+                );
+              })
+            }
 
             {!loading && visible.length === 0 && (
-              <div style={{ padding: '32px', textAlign: 'center', color: t.muted, fontFamily: t.mono, fontSize: 13 }}>
+              <div style={{ padding: '40px', textAlign: 'center', color: t.muted, fontFamily: t.mono, fontSize: 13, border: `1px solid ${t.border}`, borderRadius: 8 }}>
                 No Grade {filter} picks today.
               </div>
             )}
@@ -205,7 +331,7 @@ export default function Predictions() {
 
         {/* Grade legend */}
         {!loading && (
-          <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10, fontFamily: t.mono, fontSize: 12, color: t.muted }}>
+          <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 10, fontFamily: t.mono, fontSize: 12, color: t.muted }}>
             <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
               {[
                 { g: 'A', label: '≥65% — strong Bayesian edge' },
@@ -222,8 +348,12 @@ export default function Predictions() {
                 </div>
               ))}
             </div>
-            <div style={{ color: t.faint, fontSize: 11 }}>
-              Win probabilities from a Bayesian logistic regression with Beta-Binomial team ratings and Gaussian priors on all coefficients.
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, color: t.faint, fontSize: 11, marginTop: 4 }}>
+              <span><strong style={{ color: t.muted }}>Form</strong> — L10 win rate for the picked team vs opponent</span>
+              <span><strong style={{ color: t.muted }}>SP ERA</strong> — starting pitcher ERA, current-season rolling</span>
+              <span><strong style={{ color: t.muted }}>Win rate</strong> — Bayesian posterior win-rate estimate</span>
+              <span><strong style={{ color: t.muted }}>Rest</strong> — days since last game</span>
+              <span><strong style={{ color: t.muted }}>Park</strong> — ballpark run-scoring factor (1.0 = neutral)</span>
             </div>
           </div>
         )}

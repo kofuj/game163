@@ -369,10 +369,24 @@ def predict(target_date: str = None, history_df: pd.DataFrame = None,
     preds.to_csv(out_path, index=False)
     print(f"\n💾 Saved to {out_path}")
 
-    # Save raw CSV for the API backend (includes pitcher names when available)
-    raw_cols = ["gamePk", "date", "away_name", "home_name", "home_score", "away_score",
-                "home_win_prob", "grade", "elo_diff",
-                "home_pitcher_name", "away_pitcher_name"]
+    # Save raw CSV for the API backend (includes pitcher names + edge features)
+    raw_cols = [
+        "gamePk", "date", "away_name", "home_name", "home_score", "away_score",
+        "home_win_prob", "grade", "elo_diff",
+        # Pitcher info
+        "home_pitcher_name", "away_pitcher_name",
+        "home_pitcher_era", "away_pitcher_era",
+        "home_pitcher_whip", "away_pitcher_whip",
+        # Recent form
+        "home_win_L10", "away_win_L10",
+        "home_run_diff_L10", "away_run_diff_L10",
+        # Rest
+        "home_rest_days", "away_rest_days",
+        # Bayesian team strength
+        "home_bayes_mean", "away_bayes_mean",
+        # Park
+        "park_factor",
+    ]
     raw = today_features[[c for c in raw_cols if c in today_features.columns]].copy()
     # Carry pitcher names from today_df (features df may not preserve them)
     for col in ["home_pitcher_name", "away_pitcher_name"]:

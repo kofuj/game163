@@ -163,33 +163,103 @@ def _parse_display_csv(df: pd.DataFrame) -> list[dict]:
 
 def _parse_raw_csv(df: pd.DataFrame) -> list[dict]:
     """Parse the machine-readable raw CSV saved alongside the display CSV."""
+
+    LEAGUE_ERA  = 4.30
+    LEAGUE_WHIP = 1.32
+
+    def _flt(row, col, default=None):
+        v = row.get(col)
+        if v is None or (isinstance(v, float) and pd.isna(v)):
+            return default
+        try:
+            return float(v)
+        except (ValueError, TypeError):
+            return default
+
+    def _str_clean(row, col):
+        v = row.get(col)
+        if v is None or (isinstance(v, float) and pd.isna(v)):
+            return None
+        s = str(v).strip()
+        return s if s and s.lower() not in ("nan", "none", "") else None
+
     preds = []
     for _, row in df.iterrows():
-        home_p   = float(row.get("home_win_prob", 0.5))
-        pick_p   = float(row.get("pick_prob", 0.5))
+        home_p = _flt(row, "home_win_prob", 0.5)
+        pick_p = _flt(row, "pick_prob", 0.5)
 
-        # Pitcher names — present only in newer CSVs
-        def _name(col):
-            v = row.get(col)
-            if v is None or (isinstance(v, float) and pd.isna(v)):
-                return None
-            s = str(v).strip()
-            return s if s and s.lower() not in ("nan", "none", "") else None
+        pick      = str(row.get("pick", ""))
+        home_name = str(row.get("home_name", ""))
+        pick_is_home = (pick == home_name)
+
+        # --- Pitcher stats ---
+        h_era  = _flt(row, "home_pitcher_era",  LEAGUE_ERA)
+        a_era  = _flt(row, "away_pitcher_era",  LEAGUE_ERA)
+        h_whip = _flt(row, "home_pitcher_whip", LEAGUE_WHIP)
+        a_whip = _flt(row, "away_pitcher_whip", LEAGUE_WHIP)
+
+        pick_era  = h_era  if pick_is_home else a_era
+        opp_era   = a_era  if pick_is_home else h_era
+        pick_whip = h_whip if pick_is_home else a_whip
+        opp_whip  = a_whip if pick_is_home else h_whip
+
+        # --- Recent form (win rate last 10) ---
+        h_w10 = _flt(row, "home_win_L10")
+        a_w10 = _flt(row, "away_win_L10")
+        pick_w10 = h_w10 if pick_is_home else a_w10
+        opp_w10  = a_w10 if pick_is_home else h_w10
+
+        # --- Run differential L10 ---
+        h_rd = _flt(row, "home_run_diff_L10")
+        a_rd = _flt(row, "away_run_diff_L10")
+        pick_rd = h_rd if pick_is_home else a_rd
+        opp_rd  = a_rd if pick_is_home else h_rd
+
+        # --- Rest days ---
+        h_rest = _flt(row, "home_rest_days")
+        a_rest = _flt(row, "away_rest_days")
+        pick_rest = h_rest if pick_is_home else a_rest
+        opp_rest  = a_rest if pick_is_home else h_rest
+
+        # --- Bayesian team strength ---
+        h_bayes = _flt(row, "home_bayes_mean")
+        a_bayes = _flt(row, "away_bayes_mean")
+        pick_bayes = h_bayes if pick_is_home else a_bayes
+        opp_bayes  = a_bayes if pick_is_home else h_bayes
+
+        park = _flt(row, "park_factor", 1.0)
 
         preds.append({
             "gamePk":            str(row.get("gamePk", "")),
             "matchup":           f"{row.get('away_name', '')} @ {row.get('home_name', '')}",
             "away_name":         str(row.get("away_name", "")),
-            "home_name":         str(row.get("home_name", "")),
-            "pick":              str(row.get("pick", "")),
+            "home_name":         home_name,
+            "pick":              pick,
             "pick_prob":         round(pick_p * 100, 1) if pick_p <= 1 else round(pick_p, 1),
             "grade":             str(row.get("grade", "C")),
             "home_win_prob":     round(home_p * 100, 1) if home_p <= 1 else round(home_p, 1),
             "elo_diff":          round(float(row.get("elo_diff", 0)), 1),
             "outcome":           str(row.get("outcome", "PENDING")),
             "result":            row.get("result", None),
-            "home_pitcher_name": _name("home_pitcher_name"),
-            "away_pitcher_name": _name("away_pitcher_name"),
+            # Pitcher names
+            "home_pitcher_name": _str_clean(row, "home_pitcher_name"),
+            "away_pitcher_name": _str_clean(row, "away_pitcher_name"),
+            # Edge data (pick-side vs opponent-side)
+            "edge": {
+                "pick_era":    round(pick_era,  2) if pick_era  is not None else None,
+                "opp_era":     round(opp_era,   2) if opp_era   is not None else None,
+                "pick_whip":   round(pick_whip, 2) if pick_whip is not None else None,
+                "opp_whip":    round(opp_whip,  2) if opp_whip  is not None else None,
+                "pick_win_l10": round(pick_w10, 3) if pick_w10 is not None else None,
+                "opp_win_l10":  round(opp_w10,  3) if opp_w10  is not None else None,
+                "pick_run_diff_l10": round(pick_rd, 2) if pick_rd is not None else None,
+                "opp_run_diff_l10":  round(opp_rd,  2) if opp_rd  is not None else None,
+                "pick_rest":   round(pick_rest, 1) if pick_rest is not None else None,
+                "opp_rest":    round(opp_rest,  1) if opp_rest  is not None else None,
+                "pick_bayes":  round(pick_bayes * 100, 1) if pick_bayes is not None else None,
+                "opp_bayes":   round(opp_bayes  * 100, 1) if opp_bayes  is not None else None,
+                "park_factor": round(park, 2) if park is not None else None,
+            },
         })
     return preds
 
