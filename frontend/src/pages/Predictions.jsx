@@ -49,7 +49,12 @@ function buildBlurb(p) {
   const sentences = [];
 
   // --- Pitcher narrative (lead if meaningful gap) ---
-  const hasPitcherData = e.pick_era != null && e.opp_era != null;
+  // 4.30 is the league-average fallback used when a pitcher has insufficient
+  // current-season data — not a real measured ERA. Skip pitcher comparisons
+  // if either side is showing the placeholder value.
+  const LEAGUE_AVG_ERA = 4.30;
+  const hasPitcherData = e.pick_era != null && e.opp_era != null
+    && e.pick_era !== LEAGUE_AVG_ERA && e.opp_era !== LEAGUE_AVG_ERA;
   if (hasPitcherData) {
     const eraDiff = e.opp_era - e.pick_era; // positive = pick's SP is better
     if (pickSP && oppSP) {

@@ -157,6 +157,11 @@ def build_prediction_features(today_df: pd.DataFrame,
     """
     today_pks = set(today_df["gamePk"])
 
+    # Strip today's gamePks from history to avoid duplicates — today's games
+    # may already appear as "Final" in the 2026 schedule cache if they finished
+    # earlier in the day. Using today_df as the authoritative source for these games.
+    history_df = history_df[~history_df["gamePk"].isin(today_pks)]
+
     combined = pd.concat([history_df, today_df], ignore_index=True)
     combined = combined.sort_values("date").reset_index(drop=True)
 

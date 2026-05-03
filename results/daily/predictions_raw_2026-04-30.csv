@@ -1,0 +1,12 @@
+gamePk,date,away_name,home_name,home_score,away_score,home_win_prob,grade,elo_diff,pick,pick_prob
+824929,2026-04-30,Detroit Tigers,Atlanta Braves,0,0,0.48754972544297975,C,35.0,Detroit Tigers,0.5124502745570203
+824848,2026-04-30,Houston Astros,Baltimore Orioles,0,0,0.48754972544297975,C,35.0,Houston Astros,0.5124502745570203
+824850,2026-04-30,Houston Astros,Baltimore Orioles,0,0,0.47713475692512636,C,47.99202586985848,Houston Astros,0.5228652430748737
+823391,2026-04-30,St. Louis Cardinals,Pittsburgh Pirates,0,0,0.48754972544297975,C,35.0,St. Louis Cardinals,0.5124502745570203
+823472,2026-04-30,San Francisco Giants,Philadelphia Phillies,0,0,0.5314810123950693,C,35.0,Philadelphia Phillies,0.5314810123950693
+823471,2026-04-30,San Francisco Giants,Philadelphia Phillies,0,0,0.46510567313971346,C,47.99202586985848,San Francisco Giants,0.5348943268602866
+824524,2026-04-30,Colorado Rockies,Cincinnati Reds,0,0,0.48754972544297975,C,35.0,Colorado Rockies,0.5124502745570203
+823634,2026-04-30,Washington Nationals,New York Mets,0,0,0.48754972544297975,C,35.0,Washington Nationals,0.5124502745570203
+823795,2026-04-30,Arizona Diamondbacks,Milwaukee Brewers,0,0,0.48754972544297975,C,35.0,Arizona Diamondbacks,0.5124502745570203
+825016,2026-04-30,Kansas City Royals,Athletics,0,0,0.48754972544297975,C,35.0,Kansas City Royals,0.5124502745570203
+823714,2026-04-30,Toronto Blue Jays,Minnesota Twins,0,0,0.48754972544297975,C,35.0,Toronto Blue Jays,0.5124502745570203
