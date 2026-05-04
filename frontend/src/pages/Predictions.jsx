@@ -35,10 +35,12 @@ function OutcomeBadge({ outcome, result }) {
   );
 }
 
-// Generates a 1-2 sentence narrative explaining the key edge for a pick.
-function buildBlurb(p) {
+// ---------------------------------------------------------------------------
+// Blurb generator — returns an array of sentence strings (max 2)
+// ---------------------------------------------------------------------------
+function buildSentences(p) {
   const e = p.edge;
-  if (!e) return null;
+  if (!e) return [];
 
   const pick     = p.pick;
   const opp      = pick === p.home_name ? p.away_name : p.home_name;
@@ -48,114 +50,135 @@ function buildBlurb(p) {
 
   const sentences = [];
 
-  // --- Pitcher narrative (lead if meaningful gap) ---
-  // 4.30 is the league-average fallback used when a pitcher has insufficient
-  // current-season data — not a real measured ERA. Skip pitcher comparisons
-  // if either side is showing the placeholder value.
+  // --- Pitcher ---
   const LEAGUE_AVG_ERA = 4.30;
   const hasPitcherData = e.pick_era != null && e.opp_era != null
     && e.pick_era !== LEAGUE_AVG_ERA && e.opp_era !== LEAGUE_AVG_ERA;
   if (hasPitcherData) {
-    const eraDiff = e.opp_era - e.pick_era; // positive = pick's SP is better
+    const eraDiff = e.opp_era - e.pick_era;
     if (pickSP && oppSP) {
       if (eraDiff >= 1.0) {
-        sentences.push(
-          `${pickSP} (${e.pick_era.toFixed(2)} ERA) has a significant advantage over ${oppSP} (${e.opp_era.toFixed(2)} ERA) on the mound.`
-        );
+        sentences.push(`${pickSP} (${e.pick_era.toFixed(2)} ERA) has a significant mound advantage over ${oppSP} (${e.opp_era.toFixed(2)} ERA).`);
       } else if (eraDiff >= 0.4) {
-        sentences.push(
-          `${pickSP} holds a pitching edge with a ${e.pick_era.toFixed(2)} ERA vs ${oppSP}'s ${e.opp_era.toFixed(2)}.`
-        );
+        sentences.push(`${pickSP} holds a pitching edge with a ${e.pick_era.toFixed(2)} ERA vs ${oppSP}'s ${e.opp_era.toFixed(2)}.`);
       } else if (eraDiff <= -1.0) {
-        sentences.push(
-          `${oppSP} (${e.opp_era.toFixed(2)} ERA) outpitches ${pickSP} (${e.pick_era.toFixed(2)} ERA), but the model's team-strength edge overrides the mound matchup.`
-        );
+        sentences.push(`${oppSP} (${e.opp_era.toFixed(2)} ERA) outpitches ${pickSP} (${e.pick_era.toFixed(2)} ERA), but team strength overrides the mound matchup.`);
       } else {
-        // ERAs are close — just mention them briefly
-        sentences.push(
-          `Pitching is roughly even: ${pickSP} (${e.pick_era.toFixed(2)} ERA) vs ${oppSP} (${e.opp_era.toFixed(2)} ERA).`
-        );
+        sentences.push(`Pitching is roughly even: ${pickSP} (${e.pick_era.toFixed(2)} ERA) vs ${oppSP} (${e.opp_era.toFixed(2)} ERA).`);
       }
-    } else if (hasPitcherData && eraDiff >= 0.5) {
-      sentences.push(
-        `${pick}'s starter holds a ${eraDiff.toFixed(2)}-ERA advantage over the opposing pitcher.`
-      );
+    } else if (eraDiff >= 0.5) {
+      sentences.push(`${pick}'s starter holds a ${eraDiff.toFixed(2)}-ERA advantage over the opposing pitcher.`);
     }
   }
 
-  // --- Form narrative ---
+  // --- Form ---
   if (e.pick_win_l10 != null && e.opp_win_l10 != null) {
     const pickW = Math.round(e.pick_win_l10 * 10);
     const oppW  = Math.round(e.opp_win_l10  * 10);
     const pickRd = e.pick_run_diff_l10;
-    const oppRd  = e.opp_run_diff_l10;
 
     if (pickW >= 7 && pickW > oppW + 1) {
       const rdClause = pickRd != null && pickRd > 1.0
-        ? `, outscoring opponents by +${pickRd.toFixed(1)} runs per game`
+        ? `, outscoring opponents by +${pickRd.toFixed(1)} runs/game`
         : '';
-      sentences.push(`${pick} are ${pickW}–${10 - pickW} over their last 10 games${rdClause}, while ${opp} have gone ${oppW}–${10 - oppW}.`);
+      sentences.push(`${pick} are ${pickW}–${10 - pickW} over their last 10${rdClause}, while ${opp} have gone ${oppW}–${10 - oppW}.`);
     } else if (oppW >= 7 && oppW > pickW + 1) {
-      sentences.push(`${opp} have been the hotter team recently at ${oppW}–${10 - oppW} L10 vs ${pick}'s ${pickW}–${10 - pickW}, but the model's overall edge still favors ${pick}.`);
+      sentences.push(`${opp} have been the hotter team (${oppW}–${10 - oppW} L10 vs ${pick}'s ${pickW}–${10 - pickW}), but the model's overall edge still favors ${pick}.`);
     } else if (pickW > oppW && pickRd != null && pickRd > 1.5) {
-      sentences.push(`${pick} have outscored opponents by +${pickRd.toFixed(1)} runs per game over the last 10, reflecting stronger offensive form than the win–loss line suggests.`);
+      sentences.push(`${pick} have outscored opponents by +${pickRd.toFixed(1)} runs/game over the last 10, showing stronger form than the W–L line suggests.`);
     }
   }
 
-  // --- Elo / Bayesian strength narrative ---
+  // --- Bayesian / Elo ---
   const eloDiff = Math.abs(p.elo_diff);
   if (sentences.length < 2 && e.pick_bayes != null && e.opp_bayes != null) {
     const bayesDiff = e.pick_bayes - e.opp_bayes;
     if (bayesDiff >= 5) {
-      sentences.push(
-        `${pick}'s Bayesian win rate (${e.pick_bayes.toFixed(1)}%) is ${bayesDiff.toFixed(1)} points above ${opp}'s (${e.opp_bayes.toFixed(1)}%), one of the larger edges on today's slate.`
-      );
+      sentences.push(`${pick}'s Bayesian win rate (${e.pick_bayes.toFixed(1)}%) sits ${bayesDiff.toFixed(1)} points above ${opp}'s (${e.opp_bayes.toFixed(1)}%) — one of the larger gaps on today's slate.`);
     } else if (eloDiff >= 60) {
-      sentences.push(
-        `${pick} hold a +${eloDiff.toFixed(0)}-point Elo advantage — a meaningful strength gap built over the course of the season.`
-      );
+      sentences.push(`${pick} hold a +${eloDiff.toFixed(0)}-point Elo advantage, a meaningful strength gap built over the course of the season.`);
     }
   }
 
-  // --- Rest narrative ---
-  if (e.pick_rest != null && e.opp_rest != null) {
+  // --- Rest ---
+  if (sentences.length < 2 && e.pick_rest != null && e.opp_rest != null) {
     const restDiff = e.pick_rest - e.opp_rest;
     if (restDiff >= 2) {
       sentences.push(`${pick} enter on ${Math.round(e.pick_rest)} days' rest vs ${opp}'s ${Math.round(e.opp_rest)}.`);
     }
   }
 
-  // --- Home/away + park narrative ---
-  if (pickHome && e.park_factor != null) {
+  // --- Park factor ---
+  if (sentences.length < 2 && pickHome && e.park_factor != null) {
     if (e.park_factor >= 1.10) {
-      sentences.push(`${pick} play in one of the most hitter-friendly parks in baseball (${e.park_factor.toFixed(2)}× factor), where high-scoring games favour the stronger lineup.`);
+      sentences.push(`${pick} play in one of the most hitter-friendly parks in baseball (${e.park_factor.toFixed(2)}× factor), favouring the stronger lineup in a high-scoring game.`);
     } else if (e.park_factor <= 0.95) {
-      sentences.push(`${pick}'s home park suppresses scoring (${e.park_factor.toFixed(2)}× factor), which tends to benefit a team with a pitching advantage.`);
+      sentences.push(`${pick}'s home park suppresses scoring (${e.park_factor.toFixed(2)}× factor), tending to benefit a team with a pitching edge.`);
     }
   }
 
-  if (!sentences.length) return null;
-  return sentences.slice(0, 2).join(' ');
+  return sentences.slice(0, 2);
 }
 
+// ---------------------------------------------------------------------------
+// "Why this pick" blurb section
+// ---------------------------------------------------------------------------
 function GameBlurb({ p }) {
-  const blurb = buildBlurb(p);
-  if (!blurb) return null;
+  const sentences = buildSentences(p);
+  if (!sentences.length) return null;
+
   return (
-    <p style={{
-      margin: '10px 0 0',
-      paddingTop: 10,
-      borderTop: `1px solid ${t.border}`,
-      fontFamily: t.sans,
-      fontSize: 13,
-      color: t.muted,
-      lineHeight: 1.6,
+    <div style={{
+      marginTop: 16,
+      padding: '13px 16px',
+      background: t.surface,
+      borderRadius: 6,
+      borderLeft: `3px solid ${t.border}`,
     }}>
-      {blurb}
-    </p>
+      <div style={{
+        fontFamily: t.mono,
+        fontSize: 10,
+        color: t.faint,
+        letterSpacing: '.10em',
+        textTransform: 'uppercase',
+        marginBottom: 8,
+      }}>
+        Why this pick
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+        {sentences.map((s, i) => (
+          <p key={i} style={{
+            margin: 0,
+            fontFamily: t.sans,
+            fontSize: 14,
+            color: '#555555',
+            lineHeight: 1.65,
+          }}>
+            {s}
+          </p>
+        ))}
+      </div>
+    </div>
   );
 }
 
+// ---------------------------------------------------------------------------
+// Dual-team probability bar
+// ---------------------------------------------------------------------------
+function ProbBar({ pickProb, grade }) {
+  const c = gradeColor[grade] || t.muted;
+  const oppProb = 100 - pickProb;
+  return (
+    <div style={{ height: 5, display: 'flex', borderRadius: 99, overflow: 'hidden', gap: 1 }}>
+      <div style={{ width: `${pickProb}%`, background: c, borderRadius: '99px 0 0 99px', transition: 'width .4s ease' }} />
+      <div style={{ width: `${oppProb}%`, background: t.border, borderRadius: '0 99px 99px 0' }} />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main page
+// ---------------------------------------------------------------------------
 export default function Predictions() {
   const [data,    setData]    = useState(null);
   const [error,   setError]   = useState(false);
@@ -181,7 +204,7 @@ export default function Predictions() {
   return (
     <div style={{ minHeight: '100vh', background: t.bg, color: t.fg, fontFamily: t.sans }}>
       <Nav />
-      <div style={{ maxWidth: 1120, margin: '0 auto', padding: '0 40px 100px' }}>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 32px 100px' }}>
 
         {/* Header */}
         <div className="fade-up" style={{ paddingTop: 72, paddingBottom: 40, borderBottom: `1px solid ${t.border}`, marginBottom: 36 }}>
@@ -200,7 +223,7 @@ export default function Predictions() {
         </div>
 
         {/* Filter tabs */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 14 }}>
           <div style={{ display: 'flex', gap: 4 }}>
             {['all', 'A', 'B', 'C'].map(g => {
               const active = filter === g;
@@ -240,80 +263,102 @@ export default function Predictions() {
 
         {/* Cards */}
         {!error && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {loading
               ? Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} style={{ border: `1px solid ${t.border}`, borderRadius: 8, padding: '20px 22px', background: t.bg }}>
-                  <div style={{ height: 11, background: t.surface, borderRadius: 4, width: `${40 + (i * 9) % 35}%`, marginBottom: 10 }} />
-                  <div style={{ height: 17, background: t.surface, borderRadius: 4, width: `${28 + (i * 7) % 28}%`, marginBottom: 14 }} />
-                  <div style={{ height: 12, background: t.surface, borderRadius: 4, width: `${55 + (i * 5) % 30}%` }} />
+                <div key={i} style={{ border: `1px solid ${t.border}`, borderRadius: 10, padding: '24px 24px', background: t.bg }}>
+                  <div style={{ height: 11, background: t.surface, borderRadius: 4, width: `${40 + (i * 9) % 35}%`, marginBottom: 14 }} />
+                  <div style={{ height: 20, background: t.surface, borderRadius: 4, width: `${28 + (i * 7) % 28}%`, marginBottom: 18 }} />
+                  <div style={{ height: 5, background: t.surface, borderRadius: 99, marginBottom: 16 }} />
+                  <div style={{ height: 56, background: t.surface, borderRadius: 6 }} />
                 </div>
               ))
               : visible.map(p => {
-                const c = gradeColor[p.grade] || t.muted;
+                const c    = gradeColor[p.grade] || t.muted;
+                const opp  = p.pick === p.home_name ? p.away_name : p.home_name;
                 const hasPitchers = p.away_pitcher_name || p.home_pitcher_name;
                 return (
                   <div key={p.gamePk} style={{
-                    border: `1px solid ${t.border}`, borderRadius: 8,
-                    background: t.bg, overflow: 'hidden',
+                    border: `1px solid ${t.border}`,
+                    borderRadius: 10,
+                    background: t.bg,
+                    overflow: 'hidden',
                   }}>
-                    {/* Header bar */}
+                    {/* ── Top meta row ── */}
                     <div style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '12px 20px', borderBottom: `1px solid ${t.border}`,
-                      background: t.surface, flexWrap: 'wrap', gap: 10,
+                      padding: '11px 20px',
+                      borderBottom: `1px solid ${t.border}`,
+                      background: t.surface,
+                      flexWrap: 'wrap', gap: 8,
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: t.mono, fontSize: 12, color: t.muted }}>
-                        <TeamLogo name={p.away_name} size={14} />
+                        <TeamLogo name={p.away_name} size={13} />
                         {p.away_name}
-                        <span style={{ color: t.faint }}>@</span>
-                        <TeamLogo name={p.home_name} size={14} />
+                        <span style={{ color: t.faint, margin: '0 2px' }}>@</span>
+                        <TeamLogo name={p.home_name} size={13} />
                         {p.home_name}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <GradeChip grade={p.grade} />
                         <OutcomeBadge outcome={p.outcome} result={p.result} />
                       </div>
                     </div>
 
-                    {/* Body */}
-                    <div style={{ padding: '16px 20px' }}>
+                    {/* ── Body ── */}
+                    <div style={{ padding: '20px 22px' }}>
 
-                      {/* Pick row */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                          <TeamLogo name={p.pick} size={26} />
+                      {/* Pick name + probability */}
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <TeamLogo name={p.pick} size={30} />
                           <div>
-                            <div style={{ fontFamily: t.serif, fontWeight: 700, fontSize: 17, color: t.fg, lineHeight: 1.2 }}>
+                            <div style={{ fontFamily: t.serif, fontWeight: 700, fontSize: 19, color: t.fg, lineHeight: 1.15 }}>
                               {p.pick}
                             </div>
-                            {hasPitchers && (
-                              <div style={{ fontFamily: t.mono, fontSize: 11, color: t.faint, marginTop: 3 }}>
-                                ⚾ {p.away_pitcher_name || '—'} vs {p.home_pitcher_name || '—'}
-                              </div>
-                            )}
+                            <div style={{ fontFamily: t.mono, fontSize: 11, color: t.faint, marginTop: 3 }}>
+                              to win
+                            </div>
                           </div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontFamily: t.mono, fontWeight: 700, fontSize: 22, color: c, lineHeight: 1 }}>
+                          <div style={{ fontFamily: t.mono, fontWeight: 700, fontSize: 26, color: c, lineHeight: 1, letterSpacing: '-.02em' }}>
                             {p.pick_prob}%
                           </div>
                           <div style={{ fontFamily: t.mono, fontSize: 11, color: t.faint, marginTop: 3 }}>
-                            +{(p.pick_prob - 50).toFixed(1)} edge
+                            +{(p.pick_prob - 50).toFixed(1)} over even
                           </div>
                         </div>
                       </div>
 
-                      {/* Probability bar */}
-                      <div style={{ height: 3, background: t.border, borderRadius: 99, marginBottom: 2 }}>
-                        <div style={{
-                          height: '100%', borderRadius: 99,
-                          width: `${((p.pick_prob - 50) / 50) * 100}%`,
-                          background: c,
-                        }} />
+                      {/* Dual probability bar */}
+                      <ProbBar pickProb={p.pick_prob} grade={p.grade} />
+
+                      {/* Bar labels */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5, marginBottom: 14 }}>
+                        <span style={{ fontFamily: t.mono, fontSize: 10, color: c, fontWeight: 600 }}>
+                          {p.pick} {p.pick_prob}%
+                        </span>
+                        <span style={{ fontFamily: t.mono, fontSize: 10, color: t.faint }}>
+                          {opp} {(100 - p.pick_prob).toFixed(1)}%
+                        </span>
                       </div>
 
-                      {/* Narrative blurb */}
+                      {/* Pitcher matchup */}
+                      {hasPitchers && (
+                        <div style={{
+                          display: 'flex', alignItems: 'center', gap: 7,
+                          marginBottom: 4,
+                          fontFamily: t.mono, fontSize: 11, color: t.muted,
+                        }}>
+                          <span style={{ color: t.faint }}>⚾</span>
+                          <span>{p.away_pitcher_name || '—'}</span>
+                          <span style={{ color: t.faint }}>vs</span>
+                          <span>{p.home_pitcher_name || '—'}</span>
+                        </div>
+                      )}
+
+                      {/* Why this pick */}
                       <GameBlurb p={p} />
                     </div>
                   </div>
@@ -322,7 +367,7 @@ export default function Predictions() {
             }
 
             {!loading && visible.length === 0 && (
-              <div style={{ padding: '40px', textAlign: 'center', color: t.muted, fontFamily: t.mono, fontSize: 13, border: `1px solid ${t.border}`, borderRadius: 8 }}>
+              <div style={{ padding: '40px', textAlign: 'center', color: t.muted, fontFamily: t.mono, fontSize: 13, border: `1px solid ${t.border}`, borderRadius: 10 }}>
                 No Grade {filter} picks today.
               </div>
             )}
@@ -331,7 +376,7 @@ export default function Predictions() {
 
         {/* Grade legend */}
         {!loading && (
-          <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 8, fontFamily: t.mono, fontSize: 12, color: t.muted }}>
+          <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 8, fontFamily: t.mono, fontSize: 12, color: t.muted }}>
             <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
               {[
                 { g: 'A', label: '≥65% — strong edge' },
@@ -348,7 +393,7 @@ export default function Predictions() {
                 </div>
               ))}
             </div>
-            <div style={{ fontSize: 11, color: t.faint }}>
+            <div style={{ fontSize: 11, color: t.faint, marginTop: 2 }}>
               Edge descriptions generated from rolling pitcher ERA, L10 form, Bayesian team ratings, rest days, and park factors.
             </div>
           </div>
