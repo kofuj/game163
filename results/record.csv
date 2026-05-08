@@ -219,13 +219,28 @@ date,gamePk,away_name,home_name,pick,pick_prob,grade,home_win_prob,elo_diff,outc
 2026-05-06,823470,Athletics,Philadelphia Phillies,Philadelphia Phillies,0.5509,C,0.5509,35.34,HIT,3-6
 2026-05-06,824036,Chicago White Sox,Los Angeles Angels,Los Angeles Angels,0.5256,C,0.5256,-76.21,HIT,2-8
 2026-05-06,825091,Pittsburgh Pirates,Arizona Diamondbacks,Pittsburgh Pirates,0.5253,C,0.4747,-139.18,HIT,1-0
-2026-05-07,825090,Pittsburgh Pirates,Arizona Diamondbacks,Pittsburgh Pirates,0.5253,C,0.4747,-139.18,PENDING,
-2026-05-07,823467,Athletics,Philadelphia Phillies,Philadelphia Phillies,0.5509,C,0.5509,35.42,PENDING,
-2026-05-07,823870,Baltimore Orioles,Miami Marlins,Miami Marlins,0.5208,C,0.5208,67.85,PENDING,
-2026-05-07,824767,Tampa Bay Rays,Boston Red Sox,Tampa Bay Rays,0.5638,C,0.4362,-66.68,PENDING,
-2026-05-07,823551,Texas Rangers,New York Yankees,New York Yankees,0.6083,B,0.6083,138.41,PENDING,
-2026-05-07,822741,Minnesota Twins,Washington Nationals,Minnesota Twins,0.5742,C,0.4258,-16.45,PENDING,
-2026-05-07,824117,Cleveland Guardians,Kansas City Royals,Cleveland Guardians,0.5829,B,0.4171,-55.49,PENDING,
-2026-05-07,824681,Cincinnati Reds,Chicago Cubs,Chicago Cubs,0.5716,C,0.5716,124.89,PENDING,
-2026-05-07,824362,New York Mets,Colorado Rockies,New York Mets,0.5742,C,0.4258,21.62,PENDING,
-2026-05-07,823306,St. Louis Cardinals,San Diego Padres,San Diego Padres,0.5308,C,0.5308,31.05,PENDING,
+2026-05-07,825090,Pittsburgh Pirates,Arizona Diamondbacks,Pittsburgh Pirates,0.5253,C,0.4747,-139.18,HIT,4-2
+2026-05-07,823467,Athletics,Philadelphia Phillies,Philadelphia Phillies,0.5509,C,0.5509,35.42,MISS,12-1
+2026-05-07,823870,Baltimore Orioles,Miami Marlins,Miami Marlins,0.5208,C,0.5208,67.85,HIT,3-4
+2026-05-07,824767,Tampa Bay Rays,Boston Red Sox,Tampa Bay Rays,0.5638,C,0.4362,-66.68,HIT,8-4
+2026-05-07,823551,Texas Rangers,New York Yankees,New York Yankees,0.6083,B,0.6083,138.41,HIT,2-9
+2026-05-07,822741,Minnesota Twins,Washington Nationals,Minnesota Twins,0.5742,C,0.4258,-16.45,MISS,5-7
+2026-05-07,824117,Cleveland Guardians,Kansas City Royals,Cleveland Guardians,0.5829,B,0.4171,-55.49,HIT,8-5
+2026-05-07,824681,Cincinnati Reds,Chicago Cubs,Chicago Cubs,0.5716,C,0.5716,124.89,HIT,3-8
+2026-05-07,824362,New York Mets,Colorado Rockies,New York Mets,0.5742,C,0.4258,21.62,MISS,2-6
+2026-05-07,823306,St. Louis Cardinals,San Diego Padres,San Diego Padres,0.5308,C,0.5308,31.05,MISS,2-1
+2026-05-08,823871,Washington Nationals,Miami Marlins,Miami Marlins,0.5509,C,0.5509,63.67,PENDING,
+2026-05-08,823957,Atlanta Braves,Los Angeles Dodgers,Los Angeles Dodgers,0.5308,C,0.5308,-33.61,PENDING,
+2026-05-08,824522,Houston Astros,Cincinnati Reds,Houston Astros,0.5112,C,0.4888,169.33,PENDING,
+2026-05-08,823466,Colorado Rockies,Philadelphia Phillies,Philadelphia Phillies,0.5902,B,0.5902,97.84,PENDING,
+2026-05-08,824846,Athletics,Baltimore Orioles,Baltimore Orioles,0.5459,C,0.5459,12.86,PENDING,
+2026-05-08,822822,Los Angeles Angels,Toronto Blue Jays,Toronto Blue Jays,0.5902,B,0.5902,154.59,PENDING,
+2026-05-08,824607,Seattle Mariners,Chicago White Sox,Seattle Mariners,0.5837,B,0.4163,23.38,PENDING,
+2026-05-08,823794,New York Yankees,Milwaukee Brewers,New York Yankees,0.5223,C,0.4777,-13.17,PENDING,
+2026-05-08,822904,Chicago Cubs,Texas Rangers,Chicago Cubs,0.5805,B,0.4195,-118.69,PENDING,
+2026-05-08,825088,New York Mets,Arizona Diamondbacks,Arizona Diamondbacks,0.5327,C,0.5327,8.19,PENDING,
+2026-05-08,823303,St. Louis Cardinals,San Diego Padres,San Diego Padres,0.5308,C,0.5308,30.94,PENDING,
+2026-05-08,824443,Minnesota Twins,Cleveland Guardians,Cleveland Guardians,0.5605,C,0.5605,28.62,PENDING,
+2026-05-08,824116,Detroit Tigers,Kansas City Royals,Detroit Tigers,0.5638,C,0.4362,32.51,PENDING,
+2026-05-08,824768,Tampa Bay Rays,Boston Red Sox,Tampa Bay Rays,0.5638,C,0.4362,-66.55,PENDING,
+2026-05-08,823225,Pittsburgh Pirates,San Francisco Giants,Pittsburgh Pirates,0.5638,C,0.4362,-166.3,PENDING,
