@@ -35,132 +35,6 @@ function OutcomeBadge({ outcome, result }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Blurb generator — returns an array of sentence strings (max 2)
-// ---------------------------------------------------------------------------
-function buildSentences(p) {
-  const e = p.edge;
-  if (!e) return [];
-
-  const pick     = p.pick;
-  const opp      = pick === p.home_name ? p.away_name : p.home_name;
-  const pickSP   = pick === p.home_name ? p.home_pitcher_name : p.away_pitcher_name;
-  const oppSP    = pick === p.home_name ? p.away_pitcher_name : p.home_pitcher_name;
-  const pickHome = pick === p.home_name;
-
-  const sentences = [];
-
-  // --- Pitcher ---
-  const LEAGUE_AVG_ERA = 4.30;
-  const hasPitcherData = e.pick_era != null && e.opp_era != null
-    && e.pick_era !== LEAGUE_AVG_ERA && e.opp_era !== LEAGUE_AVG_ERA;
-  if (hasPitcherData) {
-    const eraDiff = e.opp_era - e.pick_era;
-    if (pickSP && oppSP) {
-      if (eraDiff >= 1.0) {
-        sentences.push(`${pickSP} (${e.pick_era.toFixed(2)} ERA) has a significant mound advantage over ${oppSP} (${e.opp_era.toFixed(2)} ERA).`);
-      } else if (eraDiff >= 0.4) {
-        sentences.push(`${pickSP} holds a pitching edge with a ${e.pick_era.toFixed(2)} ERA vs ${oppSP}'s ${e.opp_era.toFixed(2)}.`);
-      } else if (eraDiff <= -1.0) {
-        sentences.push(`${oppSP} (${e.opp_era.toFixed(2)} ERA) outpitches ${pickSP} (${e.pick_era.toFixed(2)} ERA), but team strength overrides the mound matchup.`);
-      } else {
-        sentences.push(`Pitching is roughly even: ${pickSP} (${e.pick_era.toFixed(2)} ERA) vs ${oppSP} (${e.opp_era.toFixed(2)} ERA).`);
-      }
-    } else if (eraDiff >= 0.5) {
-      sentences.push(`${pick}'s starter holds a ${eraDiff.toFixed(2)}-ERA advantage over the opposing pitcher.`);
-    }
-  }
-
-  // --- Form ---
-  if (e.pick_win_l10 != null && e.opp_win_l10 != null) {
-    const pickW = Math.round(e.pick_win_l10 * 10);
-    const oppW  = Math.round(e.opp_win_l10  * 10);
-    const pickRd = e.pick_run_diff_l10;
-
-    if (pickW >= 7 && pickW > oppW + 1) {
-      const rdClause = pickRd != null && pickRd > 1.0
-        ? `, outscoring opponents by +${pickRd.toFixed(1)} runs/game`
-        : '';
-      sentences.push(`${pick} are ${pickW}–${10 - pickW} over their last 10${rdClause}, while ${opp} have gone ${oppW}–${10 - oppW}.`);
-    } else if (oppW >= 7 && oppW > pickW + 1) {
-      sentences.push(`${opp} have been the hotter team (${oppW}–${10 - oppW} L10 vs ${pick}'s ${pickW}–${10 - pickW}), but the model's overall edge still favors ${pick}.`);
-    } else if (pickW > oppW && pickRd != null && pickRd > 1.5) {
-      sentences.push(`${pick} have outscored opponents by +${pickRd.toFixed(1)} runs/game over the last 10, showing stronger form than the W–L line suggests.`);
-    }
-  }
-
-  // --- Bayesian / Elo ---
-  const eloDiff = Math.abs(p.elo_diff);
-  if (sentences.length < 2 && e.pick_bayes != null && e.opp_bayes != null) {
-    const bayesDiff = e.pick_bayes - e.opp_bayes;
-    if (bayesDiff >= 5) {
-      sentences.push(`${pick}'s Bayesian win rate (${e.pick_bayes.toFixed(1)}%) sits ${bayesDiff.toFixed(1)} points above ${opp}'s (${e.opp_bayes.toFixed(1)}%) — one of the larger gaps on today's slate.`);
-    } else if (eloDiff >= 60) {
-      sentences.push(`${pick} hold a +${eloDiff.toFixed(0)}-point Elo advantage, a meaningful strength gap built over the course of the season.`);
-    }
-  }
-
-  // --- Rest ---
-  if (sentences.length < 2 && e.pick_rest != null && e.opp_rest != null) {
-    const restDiff = e.pick_rest - e.opp_rest;
-    if (restDiff >= 2) {
-      sentences.push(`${pick} enter on ${Math.round(e.pick_rest)} days' rest vs ${opp}'s ${Math.round(e.opp_rest)}.`);
-    }
-  }
-
-  // --- Park factor ---
-  if (sentences.length < 2 && pickHome && e.park_factor != null) {
-    if (e.park_factor >= 1.10) {
-      sentences.push(`${pick} play in one of the most hitter-friendly parks in baseball (${e.park_factor.toFixed(2)}× factor), favouring the stronger lineup in a high-scoring game.`);
-    } else if (e.park_factor <= 0.95) {
-      sentences.push(`${pick}'s home park suppresses scoring (${e.park_factor.toFixed(2)}× factor), tending to benefit a team with a pitching edge.`);
-    }
-  }
-
-  return sentences.slice(0, 2);
-}
-
-// ---------------------------------------------------------------------------
-// "Why this pick" blurb section
-// ---------------------------------------------------------------------------
-function GameBlurb({ p }) {
-  const sentences = buildSentences(p);
-  if (!sentences.length) return null;
-
-  return (
-    <div style={{
-      marginTop: 16,
-      padding: '13px 16px',
-      background: t.surface,
-      borderRadius: 6,
-      borderLeft: `3px solid ${t.border}`,
-    }}>
-      <div style={{
-        fontFamily: t.mono,
-        fontSize: 10,
-        color: t.faint,
-        letterSpacing: '.10em',
-        textTransform: 'uppercase',
-        marginBottom: 8,
-      }}>
-        Why this pick
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-        {sentences.map((s, i) => (
-          <p key={i} style={{
-            margin: 0,
-            fontFamily: t.sans,
-            fontSize: 14,
-            color: '#555555',
-            lineHeight: 1.65,
-          }}>
-            {s}
-          </p>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Dual-team probability bar
@@ -358,8 +232,6 @@ export default function Predictions() {
                         </div>
                       )}
 
-                      {/* Why this pick */}
-                      <GameBlurb p={p} />
                     </div>
                   </div>
                 );
@@ -392,9 +264,6 @@ export default function Predictions() {
                   {label}
                 </div>
               ))}
-            </div>
-            <div style={{ fontSize: 11, color: t.faint, marginTop: 2 }}>
-              Edge descriptions generated from rolling pitcher ERA, L10 form, Bayesian team ratings, rest days, and park factors.
             </div>
           </div>
         )}
