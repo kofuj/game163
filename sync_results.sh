@@ -20,6 +20,7 @@ cp "$SRC/season_summary.csv"    "$DEST/season_summary.csv"    && echo "✓ seaso
 cp "$SRC/record.csv"            "$DEST/record.csv"            && echo "✓ record.csv"
 cp "$SRC/daily/"predictions_*.csv     "$DEST/daily/"          && echo "✓ display CSVs"
 cp "$SRC/daily/"predictions_raw_*.csv "$DEST/daily/" 2>/dev/null && echo "✓ raw CSVs" || true
+cp "$SRC/"props_*.json                "$DEST/" 2>/dev/null       && echo "✓ props JSON" || true
 
 echo ""
 echo "Backend data synced to $DEST"

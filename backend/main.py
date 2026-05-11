@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from datetime import date, datetime
 from typing import Optional
+import json
 import pandas as pd
 import os
 
@@ -300,6 +301,24 @@ def get_record(limit: int = Query(50, le=500)):
 
     settled = int((df["outcome"] != "PENDING").sum()) if "outcome" in df.columns else 0
     return {"predictions": preds, "total": len(df), "settled": settled}
+
+
+@app.get("/api/props")
+@app.get("/api/props/{target_date}")
+def get_props(target_date: Optional[str] = None):
+    """Return player prop projections for the given date (defaults to today)."""
+    if target_date is None:
+        target_date = date.today().isoformat()
+
+    props_file = DATA_DIR / f"props_{target_date}.json"
+    if not props_file.exists():
+        candidates = sorted(DATA_DIR.glob("props_*.json"), reverse=True)
+        if not candidates:
+            raise HTTPException(404, "No props data found")
+        props_file = candidates[0]
+
+    with open(props_file) as f:
+        return json.load(f)
 
 
 @app.post("/api/record/settle")

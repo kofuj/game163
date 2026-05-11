@@ -5,6 +5,7 @@ import Predictions from './pages/Predictions.jsx';
 import History     from './pages/History.jsx';
 import Blog        from './pages/Blog.jsx';
 import BlogPost    from './pages/BlogPost.jsx';
+import Props       from './pages/Props.jsx';
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
         <Route path="/"            element={<Home />} />
         <Route path="/performance" element={<Performance />} />
         <Route path="/predictions" element={<Predictions />} />
+        <Route path="/props"       element={<Props />} />
         <Route path="/history"     element={<History />} />
         <Route path="/blog"        element={<Blog />} />
         <Route path="/blog/:slug"  element={<BlogPost />} />
