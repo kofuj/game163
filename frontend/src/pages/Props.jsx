@@ -51,6 +51,10 @@ function PitcherCard({ pitcher, label }) {
   const p = pitcher?.projection;
   const name = pitcher?.name || 'TBD';
 
+  // Highlight FIP if it meaningfully differs from ERA
+  const fipDelta = p ? p.season_fip - p.season_era : 0;
+  const fipColor = fipDelta < -0.4 ? '#c41230' : fipDelta > 0.4 ? '#2d6a3f' : t.fg;
+
   return (
     <div style={{
       flex: 1, padding: '14px 16px',
@@ -66,18 +70,33 @@ function PitcherCard({ pitcher, label }) {
 
       {p ? (
         <>
-          <div style={{ display: 'flex', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
-            <div style={{ fontFamily: t.mono, fontSize: 11, color: t.muted }}>
-              ERA <strong style={{ color: t.fg }}>{p.season_era}</strong>
-            </div>
-            <div style={{ fontFamily: t.mono, fontSize: 11, color: t.muted }}>
-              WHIP <strong style={{ color: t.fg }}>{p.season_whip}</strong>
-            </div>
-            <div style={{ fontFamily: t.mono, fontSize: 11, color: t.muted }}>
-              {p.season_ip_per_gs} IP/start
-            </div>
+          {/* Season metrics row */}
+          <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+            {[
+              { label: 'ERA',   value: p.season_era },
+              { label: 'FIP',   value: p.season_fip,  color: fipColor },
+              { label: 'xERA',  value: p.season_xera },
+              { label: 'WHIP',  value: p.season_whip },
+            ].map(({ label, value, color }) => (
+              <div key={label} style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                padding: '5px 9px', background: t.bg, borderRadius: 5,
+                border: `1px solid ${t.border}`, minWidth: 46,
+              }}>
+                <span style={{ fontFamily: t.mono, fontSize: 9, color: t.faint, textTransform: 'uppercase', letterSpacing: '.06em' }}>{label}</span>
+                <span style={{ fontFamily: t.mono, fontWeight: 700, fontSize: 14, color: color || t.fg }}>{value}</span>
+              </div>
+            ))}
           </div>
 
+          {/* K% / BB% */}
+          <div style={{ display: 'flex', gap: 12, marginBottom: 12, fontFamily: t.mono, fontSize: 11 }}>
+            <span style={{ color: t.muted }}>K% <strong style={{ color: t.fg }}>{p.season_k_pct}%</strong></span>
+            <span style={{ color: t.muted }}>BB% <strong style={{ color: t.fg }}>{p.season_bb_pct}%</strong></span>
+            <span style={{ color: t.muted }}>{p.season_ip_per_gs} IP/GS</span>
+          </div>
+
+          {/* Projections */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, borderTop: `1px solid ${t.border}`, paddingTop: 12 }}>
             <StatCell label="Strikeouts" proj={p.proj_k}    line={p.k_line}    side={p.k_side} />
             <StatCell label="Outs Rec."  proj={p.proj_outs} line={p.outs_line} side={p.outs_side} />
@@ -113,6 +132,9 @@ function BatterRow({ batter }) {
     </div>
   );
 
+  // Format batting average style (e.g. .287)
+  const fmtAvg = v => v ? `.${String(Math.round(v * 1000)).padStart(3, '0')}` : '—';
+
   return (
     <div style={{
       display: 'grid',
@@ -130,13 +152,18 @@ function BatterRow({ batter }) {
       <span style={{ fontFamily: t.mono, fontSize: 10, color: t.muted }}>
         {batter.position}
       </span>
-      {/* Name + season rates */}
+      {/* Name + sabermetric rates */}
       <div>
         <div style={{ fontFamily: t.sans, fontSize: 13, fontWeight: 500, color: t.fg, lineHeight: 1.3 }}>
           {batter.name}
         </div>
-        <div style={{ fontFamily: t.mono, fontSize: 10, color: t.faint }}>
-          {p.season_avg ? `.${String(Math.round(p.season_avg * 1000)).padStart(3, '0')}` : ''}{p.season_hr ? ` · ${p.season_hr} HR` : ''}
+        <div style={{ fontFamily: t.mono, fontSize: 10, color: t.faint, display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 1 }}>
+          {p.xba   != null && <span>xBA <strong style={{ color: t.muted }}>{fmtAvg(p.xba)}</strong></span>}
+          {p.xslg  != null && <span>xSLG <strong style={{ color: t.muted }}>{fmtAvg(p.xslg)}</strong></span>}
+          {p.xwoba != null && <span>xwOBA <strong style={{ color: t.muted }}>{p.xwoba.toFixed(3)}</strong></span>}
+          {p.bb_pct != null && <span>BB% <strong style={{ color: t.muted }}>{p.bb_pct}%</strong></span>}
+          {p.k_pct  != null && <span>K% <strong style={{ color: t.muted }}>{p.k_pct}%</strong></span>}
+          {p.xiso  != null && <span>xISO <strong style={{ color: t.muted }}>{fmtAvg(p.xiso)}</strong></span>}
         </div>
       </div>
       {/* Hits */}
@@ -345,7 +372,7 @@ export default function Props() {
             Player Projections
           </h1>
           <p style={{ fontSize: 15, color: t.muted, lineHeight: 1.65, maxWidth: 560 }}>
-            Model-projected prop lines for every starting player. Based on season rate stats, opposing pitcher quality, and park factors. Not sportsbook lines — projections only.
+            Model-projected prop lines for every starting player. Batters use Statcast expected stats (xBA, xSLG, xwOBA). Pitchers use FIP and xERA. Pitcher quality adjustments use FIP, not raw ERA. Park-adjusted throughout.
           </p>
         </div>
 
@@ -358,10 +385,11 @@ export default function Props() {
             display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center',
           }}>
             <span style={{ color: t.faint, fontWeight: 600 }}>How to read:</span>
-            <span>Projection is the expected value for the game</span>
-            <span style={{ color: '#2d6a3f', fontWeight: 600 }}>↑ OVER</span> <span>= projection exceeds line</span>
-            <span style={{ color: '#c41230', fontWeight: 600 }}>↓ UNDER</span> <span>= projection is below line</span>
-            <span>HR% = chance of hitting any home run</span>
+            <span><strong style={{ color: t.fg }}>↑ OVER</strong> / <strong style={{ color: t.fg }}>↓ UNDER</strong> = projection vs line</span>
+            <span>Hits &amp; TB use <strong style={{ color: t.fg }}>xBA / xSLG</strong> (Statcast expected)</span>
+            <span>Pitcher ER uses <strong style={{ color: t.fg }}>xERA</strong>; Ks use <strong style={{ color: t.fg }}>K%</strong></span>
+            <span>Pitcher quality adjustment via <strong style={{ color: t.fg }}>FIP</strong></span>
+            <span>HR% = projected chance of any HR</span>
           </div>
         )}
 
