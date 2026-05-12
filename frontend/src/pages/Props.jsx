@@ -4,54 +4,79 @@ import { fetchProps } from '../api.js';
 import { t } from '../theme.js';
 
 // ---------------------------------------------------------------------------
-// Tiny helpers
+// Odds math — Poisson percentages → American odds
 // ---------------------------------------------------------------------------
-const fmtProb = v => (v >= 0.10 ? v.toFixed(2) : v.toFixed(3));
+function pctToAmerican(pct) {
+  if (pct == null) return '—';
+  const p = Math.max(0.001, Math.min(0.999, pct / 100));
+  if (p >= 0.5) return `-${Math.round(p / (1 - p) * 100)}`;
+  return `+${Math.round((1 - p) / p * 100)}`;
+}
 
-function SideTag({ side }) {
-  if (!side || side === 'PUSH') return (
-    <span style={{ fontFamily: t.mono, fontSize: 10, color: t.muted }}>—</span>
-  );
-  const over = side === 'OVER';
+// ---------------------------------------------------------------------------
+// Odds pill: shows American odds, coloured by direction
+// ---------------------------------------------------------------------------
+function OddsPill({ pct, direction }) {
+  if (pct == null) return null;
+  const odds = pctToAmerican(pct);
+  const isOver = direction === 'over';
+  const favoured = pct >= 50;
+  const color = isOver ? '#2d6a3f' : '#c41230';
+
   return (
     <span style={{
-      fontFamily: t.mono, fontSize: 10, fontWeight: 600,
-      color: over ? '#2d6a3f' : '#c41230',
-      background: over ? '#2d6a3f12' : '#c4123012',
-      padding: '1px 5px', borderRadius: 3,
+      fontFamily: t.mono, fontSize: 11, fontWeight: favoured ? 700 : 500,
+      color: favoured ? color : t.muted,
+      background: favoured ? (isOver ? '#2d6a3f10' : '#c4123010') : 'transparent',
+      padding: favoured ? '0 4px' : 0,
+      borderRadius: 3,
     }}>
-      {over ? '↑' : '↓'} {side}
+      {odds}
     </span>
   );
 }
 
-function StatCell({ label, proj, line, side, overPct }) {
-  const isOver = side === 'OVER';
+// ---------------------------------------------------------------------------
+// StatCell — pitcher prop cell with over + under odds on separate lines
+// ---------------------------------------------------------------------------
+function StatCell({ label, proj, line, side, overPct, underPct }) {
+  const isOver  = side === 'OVER';
   const isUnder = side === 'UNDER';
-  const pct = overPct != null ? (isOver ? overPct : 100 - overPct) : null;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 68 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 78 }}>
+      {/* Label */}
       <span style={{ fontFamily: t.mono, fontSize: 10, color: t.faint, textTransform: 'uppercase', letterSpacing: '.04em' }}>
         {label}
       </span>
+      {/* Projection */}
       <span style={{ fontFamily: t.mono, fontWeight: 700, fontSize: 15, color: t.fg, lineHeight: 1 }}>
         {typeof proj === 'number' ? proj.toFixed(proj >= 10 ? 0 : 1) : proj}
       </span>
       {line !== undefined && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ fontFamily: t.mono, fontSize: 10, color: t.faint }}>{line}</span>
-            <SideTag side={side} />
-          </div>
-          {pct != null && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginTop: 2, borderTop: `1px solid ${t.border}`, paddingTop: 4 }}>
+          {/* Over row */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
             <span style={{
-              fontFamily: t.mono, fontSize: 11, fontWeight: 600,
-              color: isOver ? '#2d6a3f' : isUnder ? '#c41230' : t.muted,
+              fontFamily: t.mono, fontSize: 10,
+              color: isOver ? '#2d6a3f' : t.faint,
+              fontWeight: isOver ? 700 : 400,
             }}>
-              {pct}%
+              ↑ {line}
             </span>
-          )}
+            <OddsPill pct={overPct} direction="over" />
+          </div>
+          {/* Under row */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
+            <span style={{
+              fontFamily: t.mono, fontSize: 10,
+              color: isUnder ? '#c41230' : t.faint,
+              fontWeight: isUnder ? 700 : 400,
+            }}>
+              ↓ {line}
+            </span>
+            <OddsPill pct={underPct} direction="under" />
+          </div>
         </div>
       )}
     </div>
@@ -78,8 +103,18 @@ function PitcherCard({ pitcher, label }) {
       <div style={{ fontFamily: t.mono, fontSize: 10, color: t.faint, textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 6 }}>
         {label}
       </div>
-      <div style={{ fontFamily: t.serif, fontWeight: 700, fontSize: 16, marginBottom: 10, color: t.fg }}>
-        {name}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <span style={{ fontFamily: t.serif, fontWeight: 700, fontSize: 16, color: t.fg }}>{name}</span>
+        {p && p.start_pct < 0.40 && (
+          <span style={{
+            fontFamily: t.mono, fontSize: 9, fontWeight: 600,
+            color: '#a07820', background: '#a0782015',
+            border: '1px solid #a0782030', borderRadius: 3,
+            padding: '1px 5px', textTransform: 'uppercase', letterSpacing: '.06em',
+          }}>
+            spot start
+          </span>
+        )}
       </div>
 
       {p ? (

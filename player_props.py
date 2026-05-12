@@ -290,7 +290,21 @@ def project_pitcher(
     k_pct  = round(k  / bf * 100, 1) if bf > 0 else 0.0
     bb_pct = round(bb / bf * 100, 1) if bf > 0 else 0.0
 
-    ip_per_gs = total_ip / gs
+    gp = int(mlb_stats.get("gamesPlayed", gs) or gs)
+    start_pct = gs / max(gp, gs)
+
+    # Cap ip_per_gs based on how often this pitcher actually starts.
+    # Relievers making spot starts have inflated ip/gs because their total IP
+    # includes many short relief outings divided by only a few starts.
+    if start_pct >= 0.60:
+        ip_cap = 7.0   # true rotation starter
+    elif start_pct >= 0.30:
+        ip_cap = 5.5   # swing / opener / occasional starter
+    else:
+        ip_cap = 4.5   # reliever making a spot start
+
+    ip_per_gs = min(total_ip / gs, ip_cap)
+
     # Park slightly affects pitcher totals (bigger park = slightly more IP)
     proj_ip   = round(ip_per_gs * (park_factor ** -0.12), 1)
     proj_bf   = proj_ip * BF_PER_IP
@@ -338,7 +352,9 @@ def project_pitcher(
         "season_bb_pct":     bb_pct,
         "season_k":          k,
         "season_gs":         gs,
+        "season_gp":         gp,
         "season_ip_per_gs":  round(ip_per_gs, 1),
+        "start_pct":         round(start_pct, 2),
     }
 
 
