@@ -35,6 +35,28 @@ FIP_CONST    = 3.10   # league FIP constant (≈ league ERA − league FIP raw)
 BF_PER_IP    = 4.30   # league-average batters faced per inning pitched
 RESULTS_DIR  = Path(__file__).parent / "results"
 
+# ---------------------------------------------------------------------------
+# Bayesian shrinkage priors for batter rate stats
+# Small samples (early season, bench guys) overfit without regression to mean.
+# We treat each prior as adding N "phantom" PA at the league-average rate.
+# ---------------------------------------------------------------------------
+# HR: ~15 HR per 600 PA for a typical lineup spot
+HR_PRIOR_RATE = 0.025   # 2.5 % per PA
+HR_PRIOR_PA   = 150     # equivalent to adding half a season of evidence
+
+# RBI: ~60 RBI per 600 PA for a typical lineup spot
+RBI_PRIOR_RATE = 0.100  # 0.10 RBI per PA
+RBI_PRIOR_PA   = 100
+
+
+def shrink(observed: float, n: int, prior_rate: float, prior_n: int) -> float:
+    """
+    Bayesian shrinkage: blend observed rate toward a prior.
+    observed = raw count (e.g. HR), n = PA, prior_rate = league avg per PA.
+    Returns the blended per-PA rate.
+    """
+    return (observed + prior_rate * prior_n) / (n + prior_n)
+
 # Expected PA by batting order position in a 9-inning game
 PA_BY_POS = {1: 4.5, 2: 4.3, 3: 4.2, 4: 4.0, 5: 3.9,
              6: 3.8, 7: 3.7, 8: 3.6, 9: 3.5}
@@ -406,11 +428,13 @@ def project_batter(
 
     iso = round(raw_slg - raw_avg, 3)   # actual ISO
 
-    # ── HR rate: use actual rate (most stable for power metric) ──────────
-    hr_rate = hr / season_pa if season_pa > 0 else 0.0
+    # ── HR rate — Bayesian shrinkage toward league prior ─────────────────
+    # Raw rate from a 20-game hot start would wildly overproject.
+    # Blend observed HR/PA toward a 2.5%/PA prior weighted by 150 phantom PA.
+    hr_rate = shrink(hr, season_pa, HR_PRIOR_RATE, HR_PRIOR_PA)
 
-    # ── RBI: per-PA rate ─────────────────────────────────────────────────
-    rbi_rate = rbi / season_pa if season_pa > 0 else 0.0
+    # ── RBI rate — same shrinkage (highly context-dependent, noisy) ───────
+    rbi_rate = shrink(rbi, season_pa, RBI_PRIOR_RATE, RBI_PRIOR_PA)
 
     # ── Pitcher quality factor using FIP ─────────────────────────────────
     opp_fip_eff = opp_fip if (opp_fip and opp_fip > 0) else LEAGUE_FIP
