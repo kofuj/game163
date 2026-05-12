@@ -4,6 +4,26 @@ import { fetchProps } from '../api.js';
 import { t } from '../theme.js';
 
 // ---------------------------------------------------------------------------
+// Side arrow tag (used in batter rows)
+// ---------------------------------------------------------------------------
+function SideTag({ side }) {
+  if (!side || side === 'PUSH') return (
+    <span style={{ fontFamily: t.mono, fontSize: 10, color: t.muted }}>—</span>
+  );
+  const over = side === 'OVER';
+  return (
+    <span style={{
+      fontFamily: t.mono, fontSize: 10, fontWeight: 600,
+      color: over ? '#2d6a3f' : '#c41230',
+      background: over ? '#2d6a3f12' : '#c4123012',
+      padding: '1px 5px', borderRadius: 3,
+    }}>
+      {over ? '↑' : '↓'} {side}
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Odds math — Poisson percentages → American odds
 // ---------------------------------------------------------------------------
 function pctToAmerican(pct) {
