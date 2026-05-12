@@ -25,19 +25,33 @@ function SideTag({ side }) {
   );
 }
 
-function StatCell({ label, proj, line, side, pct }) {
+function StatCell({ label, proj, line, side, overPct }) {
+  const isOver = side === 'OVER';
+  const isUnder = side === 'UNDER';
+  const pct = overPct != null ? (isOver ? overPct : 100 - overPct) : null;
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 64 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 68 }}>
       <span style={{ fontFamily: t.mono, fontSize: 10, color: t.faint, textTransform: 'uppercase', letterSpacing: '.04em' }}>
         {label}
       </span>
-      <span style={{ fontFamily: t.mono, fontWeight: 600, fontSize: 14, color: t.fg }}>
-        {pct ? `${(proj * 100).toFixed(0)}%` : proj.toFixed(2)}
+      <span style={{ fontFamily: t.mono, fontWeight: 700, fontSize: 15, color: t.fg, lineHeight: 1 }}>
+        {typeof proj === 'number' ? proj.toFixed(proj >= 10 ? 0 : 1) : proj}
       </span>
       {line !== undefined && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ fontFamily: t.mono, fontSize: 10, color: t.faint }}>{line}</span>
-          <SideTag side={side} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ fontFamily: t.mono, fontSize: 10, color: t.faint }}>{line}</span>
+            <SideTag side={side} />
+          </div>
+          {pct != null && (
+            <span style={{
+              fontFamily: t.mono, fontSize: 11, fontWeight: 600,
+              color: isOver ? '#2d6a3f' : isUnder ? '#c41230' : t.muted,
+            }}>
+              {pct}%
+            </span>
+          )}
         </div>
       )}
     </div>
@@ -98,14 +112,41 @@ function PitcherCard({ pitcher, label }) {
 
           {/* Projections */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, borderTop: `1px solid ${t.border}`, paddingTop: 12 }}>
-            <StatCell label="Strikeouts" proj={p.proj_k}    line={p.k_line}    side={p.k_side} />
-            <StatCell label="Outs Rec."  proj={p.proj_outs} line={p.outs_line} side={p.outs_side} />
-            <StatCell label="Earn. Runs" proj={p.proj_er}   line={p.er_line}   side={p.er_side} />
+            <StatCell label="Strikeouts" proj={p.proj_k}    line={p.k_line}    side={p.k_side}    overPct={p.k_over_pct} />
+            <StatCell label="Outs Rec."  proj={p.proj_outs} line={p.outs_line} side={p.outs_side} overPct={p.outs_over_pct} />
+            <StatCell label="Earn. Runs" proj={p.proj_er}   line={p.er_line}   side={p.er_side}   overPct={p.er_over_pct} />
           </div>
         </>
       ) : (
         <div style={{ fontFamily: t.mono, fontSize: 12, color: t.faint }}>
           {name === 'TBD' ? 'Pitcher not announced' : 'Insufficient season data'}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Batter stat column (right-aligned cell with projection + line + probability)
+// ---------------------------------------------------------------------------
+function BatterStatCol({ proj, line, side, overPct, isHr }) {
+  const isOver  = side === 'OVER';
+  const isUnder = side === 'UNDER';
+  const pct     = overPct != null ? (isOver ? overPct : 100 - overPct) : null;
+  const pctColor = isOver ? '#2d6a3f' : isUnder ? '#c41230' : t.muted;
+
+  return (
+    <div style={{ textAlign: 'right' }}>
+      <div style={{ fontFamily: t.mono, fontWeight: 600, fontSize: 13, color: t.fg }}>
+        {isHr ? `${Math.round(proj * 100)}%` : proj.toFixed(2)}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 3, marginTop: 2 }}>
+        <span style={{ fontFamily: t.mono, fontSize: 10, color: t.faint }}>{line}</span>
+        <SideTag side={side} />
+      </div>
+      {pct != null && (
+        <div style={{ fontFamily: t.mono, fontSize: 11, fontWeight: 600, color: pctColor, marginTop: 1 }}>
+          {pct}%
         </div>
       )}
     </div>
@@ -167,39 +208,25 @@ function BatterRow({ batter }) {
         </div>
       </div>
       {/* Hits */}
-      <div style={{ textAlign: 'right' }}>
-        <div style={{ fontFamily: t.mono, fontWeight: 600, fontSize: 13, color: t.fg }}>{p.proj_hits.toFixed(2)}</div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 3, marginTop: 2 }}>
-          <span style={{ fontFamily: t.mono, fontSize: 10, color: t.faint }}>{p.hits_line}</span>
-          <SideTag side={p.hits_side} />
-        </div>
-      </div>
+      <BatterStatCol
+        proj={p.proj_hits} line={p.hits_line} side={p.hits_side}
+        overPct={p.hits_over_pct}
+      />
       {/* Total Bases */}
-      <div style={{ textAlign: 'right' }}>
-        <div style={{ fontFamily: t.mono, fontWeight: 600, fontSize: 13, color: t.fg }}>{p.proj_tb.toFixed(2)}</div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 3, marginTop: 2 }}>
-          <span style={{ fontFamily: t.mono, fontSize: 10, color: t.faint }}>{p.tb_line}</span>
-          <SideTag side={p.tb_side} />
-        </div>
-      </div>
+      <BatterStatCol
+        proj={p.proj_tb} line={p.tb_line} side={p.tb_side}
+        overPct={p.tb_over_pct}
+      />
       {/* HR */}
-      <div style={{ textAlign: 'right' }}>
-        <div style={{ fontFamily: t.mono, fontWeight: 600, fontSize: 13, color: t.fg }}>
-          {(p.proj_hr * 100).toFixed(0)}%
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 3, marginTop: 2 }}>
-          <span style={{ fontFamily: t.mono, fontSize: 10, color: t.faint }}>0.5</span>
-          <SideTag side={p.hr_side} />
-        </div>
-      </div>
+      <BatterStatCol
+        proj={p.proj_hr} line={0.5} side={p.hr_side}
+        overPct={p.hr_over_pct} isHr
+      />
       {/* RBI */}
-      <div style={{ textAlign: 'right' }}>
-        <div style={{ fontFamily: t.mono, fontWeight: 600, fontSize: 13, color: t.fg }}>{p.proj_rbi.toFixed(2)}</div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 3, marginTop: 2 }}>
-          <span style={{ fontFamily: t.mono, fontSize: 10, color: t.faint }}>{p.rbi_line}</span>
-          <SideTag side={p.rbi_side} />
-        </div>
-      </div>
+      <BatterStatCol
+        proj={p.proj_rbi} line={p.rbi_line} side={p.rbi_side}
+        overPct={p.rbi_over_pct}
+      />
     </div>
   );
 }

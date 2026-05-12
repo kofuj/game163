@@ -17,6 +17,7 @@ Output: results/props_{date}.json
 
 import io
 import json
+import math
 import sys
 import time
 from datetime import date as _date
@@ -71,6 +72,36 @@ PARK_FACTORS: dict[str, float] = {
     "Sacramento Athletics":  0.95,
     "San Diego Padres":      0.95,
 }
+
+# ---------------------------------------------------------------------------
+# Poisson probability helpers
+# ---------------------------------------------------------------------------
+def _poisson_pmf(k: int, lam: float) -> float:
+    if lam <= 0:
+        return 1.0 if k == 0 else 0.0
+    return math.exp(-lam) * (lam ** k) / math.factorial(k)
+
+
+def _poisson_cdf(k: int, lam: float) -> float:
+    """P(X ≤ k) for Poisson(lam)."""
+    return sum(_poisson_pmf(i, lam) for i in range(max(k + 1, 1)))
+
+
+def over_prob(proj: float, line: float) -> float:
+    """
+    Probability of exceeding a half-integer line under Poisson(proj).
+    OVER 0.5 = P(X ≥ 1), OVER 1.5 = P(X ≥ 2), etc.
+    Returns a percentage integer (e.g. 68).
+    """
+    if proj <= 0:
+        return 0
+    k = int(line)   # floor works for x.5 lines
+    return int(round((1 - _poisson_cdf(k, proj)) * 100))
+
+
+def under_prob(proj: float, line: float) -> int:
+    return 100 - over_prob(proj, line)
+
 
 SESS = requests.Session()
 SESS.headers.update({"User-Agent": "Game163/1.0 props-generator"})
@@ -273,7 +304,7 @@ def project_pitcher(
     # Use xERA for ER projection (better than raw ERA)
     proj_er   = round(xera / 9 * proj_ip, 1)
 
-    # Standard lines
+    # Standard lines + probabilities
     k_line    = _nearest(proj_k,    [3.5, 4.5, 5.5, 6.5, 7.5])
     outs_line = _nearest(proj_outs, [14.5, 15.5, 16.5, 17.5, 18.5, 19.5])
     er_line   = _nearest(proj_er,   [0.5, 1.5, 2.5])
@@ -284,13 +315,20 @@ def project_pitcher(
         "proj_outs": proj_outs,
         "proj_er":   proj_er,
         "proj_ip":   proj_ip,
-        # Lines
+        # Lines + sides
         "k_line":    k_line,
         "outs_line": outs_line,
         "er_line":   er_line,
         "k_side":    _side(proj_k,    k_line),
         "outs_side": _side(proj_outs, outs_line),
         "er_side":   _side(proj_er,   er_line),
+        # Over/Under probabilities (Poisson model, %)
+        "k_over_pct":    over_prob(proj_k,    k_line),
+        "k_under_pct":   under_prob(proj_k,   k_line),
+        "outs_over_pct": over_prob(proj_outs, outs_line),
+        "outs_under_pct":under_prob(proj_outs,outs_line),
+        "er_over_pct":   over_prob(proj_er,   er_line),
+        "er_under_pct":  under_prob(proj_er,  er_line),
         # Season metrics
         "season_era":        round(era,  2),
         "season_fip":        round(fip,  2),
@@ -375,6 +413,10 @@ def project_batter(
     # RBI: per-PA rate over all PAs
     proj_rbi  = round(proj_pa * rbi_rate * p_factor * park_factor, 2)
 
+    hits_line = 0.5 if proj_hits < 1.2 else 1.5
+    tb_line   = 1.5 if proj_tb   < 2.0 else 2.5
+    rbi_line  = 0.5 if proj_rbi  < 0.75 else 1.5
+
     return {
         # Projections
         "proj_hits": proj_hits,
@@ -382,13 +424,22 @@ def project_batter(
         "proj_hr":   proj_hr,
         "proj_rbi":  proj_rbi,
         # Standard lines + sides
-        "hits_line":  0.5 if proj_hits < 1.2 else 1.5,
-        "hits_side":  _side(proj_hits, 0.5 if proj_hits < 1.2 else 1.5),
-        "tb_line":    1.5 if proj_tb < 2.0 else 2.5,
-        "tb_side":    _side(proj_tb, 1.5 if proj_tb < 2.0 else 2.5),
+        "hits_line":  hits_line,
+        "hits_side":  _side(proj_hits, hits_line),
+        "tb_line":    tb_line,
+        "tb_side":    _side(proj_tb,   tb_line),
         "hr_side":    _side(proj_hr, 0.5),
-        "rbi_line":   0.5 if proj_rbi < 0.75 else 1.5,
-        "rbi_side":   _side(proj_rbi, 0.5 if proj_rbi < 0.75 else 1.5),
+        "rbi_line":   rbi_line,
+        "rbi_side":   _side(proj_rbi,  rbi_line),
+        # Over/Under probabilities (Poisson model, %)
+        "hits_over_pct":  over_prob(proj_hits, hits_line),
+        "hits_under_pct": under_prob(proj_hits, hits_line),
+        "tb_over_pct":    over_prob(proj_tb,   tb_line),
+        "tb_under_pct":   under_prob(proj_tb,  tb_line),
+        "hr_over_pct":    over_prob(proj_hr,   0.5),
+        "hr_under_pct":   under_prob(proj_hr,  0.5),
+        "rbi_over_pct":   over_prob(proj_rbi,  rbi_line),
+        "rbi_under_pct":  under_prob(proj_rbi, rbi_line),
         # Expected / sabermetric display stats
         "xba":    round(xba,   3),
         "xslg":   round(xslg,  3),
